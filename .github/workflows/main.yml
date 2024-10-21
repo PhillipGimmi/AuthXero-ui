@@ -1,4 +1,4 @@
-name: CI and Deploy Backend
+name: CI
 
 on:
   push:
@@ -9,10 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -27,31 +25,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Build the backend
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build
         run: go build -v ./...
+
+      - name: Set database URL
+        run: |
+          echo "DATABASE_URL=postgres://authxero_user:Asdewq123@139.59.165.99:5432/backend?sslmode=disable" >> $GITHUB_ENV
 
       - name: Run tests
         run: go test -v ./...
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
-
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to Droplet
-        run: |
-          ssh -o StrictHostKeyChecking=no root@your-droplet-ip <<EOF
-            cd /var/www/backend
-            git pull origin ${{ github.ref_name }}
-            go build -v ./cmd/api
-            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
-            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            # Restart your backend service or application
-            systemctl restart backend
-          EOF
