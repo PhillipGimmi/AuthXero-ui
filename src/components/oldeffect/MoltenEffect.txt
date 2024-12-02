@@ -1,0 +1,563 @@
+'use client';
+
+import React, { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+
+// Add missing uniforms to the shared uniforms interface
+interface SharedUniforms {
+  iResolution: { value: THREE.Vector3 };
+  iTime: { value: number };
+  iTimeDelta: { value: number };
+  iFrameRate: { value: number };
+  iFrame: { value: number };
+  iChannelTime: { value: number[] };
+  iMouse: { value: THREE.Vector4 };
+  iDate: { value: THREE.Vector4 };
+  iSampleRate: { value: number };
+  iChannel0: { value: THREE.Texture | null };
+  iChannel1: { value: THREE.Texture | null };
+  iChannel2: { value: THREE.Texture | null };
+  iChannel3: { value: THREE.Texture | null };
+  iChannelResolution: { 
+    value: THREE.Vector3[] 
+  };
+}
+
+const simulationFragmentShader = `
+precision highp float;
+
+uniform vec3 iResolution;
+uniform float iTime;
+uniform float iTimeDelta;
+uniform float iFrameRate;
+uniform int iFrame;
+uniform float iChannelTime[4];
+uniform vec4 iMouse;
+uniform vec4 iDate;
+uniform float iSampleRate;
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
+uniform sampler2D iChannel3;
+uniform vec3 iChannelResolution[4];
+
+#define PI2 6.283185
+#define Res0 vec2(textureSize(iChannel0,0))
+#define Res1 vec2(textureSize(iChannel1,0))
+#define RotNum 5
+#define SUPPORT_EVEN_ROTNUM
+
+vec2 scuv(vec2 uv) {
+    float zoom = 1.0;
+    return (uv - 0.5) * 1.2 * zoom + 0.5;
+}
+
+vec2 uvSmooth(vec2 uv, vec2 res) {
+    vec2 f = fract(uv * res);
+    return (uv * res + 0.5 - f + 3.0 * f * f - 2.0 * f * f * f) / res;
+}
+
+const float ang = PI2/float(RotNum);
+mat2 m = mat2(cos(ang),sin(ang),-sin(ang),cos(ang));
+mat2 mh = mat2(cos(ang*0.5),sin(ang*0.5),-sin(ang*0.5),cos(ang*0.5));
+
+float getRot(vec2 pos, vec2 b) {
+    float l = log2(dot(b,b)) * sqrt(0.125) * 0.0;
+    vec2 p = b;
+    float rot = 0.0;
+    for(int i=0; i<RotNum; i++) {
+        rot += dot(textureLod(iChannel0, ((pos+p)/Res0), l).xy - vec2(0.5), p.yx * vec2(1.0,-1.0));
+        p = m * p;
+    }
+    return rot/float(RotNum)/dot(b,b);
+}
+
+void main() {
+    vec2 pos = gl_FragCoord.xy;
+    vec2 b = cos(float(iFrame) * 0.3 - vec2(0.0, 1.57));
+    vec2 v = vec2(0.0);
+    float bbMax = 0.5 * Res0.y;
+    bbMax *= bbMax;
+    
+    for(int l=0; l<20; l++) {
+        if(dot(b,b) > bbMax) break;
+        vec2 p = b;
+        for(int i=0; i<RotNum; i++) {
+            v += p.yx * getRot(pos+p, -mh*b);
+            p = m * p;
+        }
+        b *= 2.0;
+    }
+    
+    // Exactly match original advection
+    vec4 col = textureLod(iChannel0, fract((pos-v*vec2(-1.0,1.0)*5.0*sqrt(Res0.x/600.0))/Res0), 0.0);
+    
+    // Match original self-consistency
+    col.xy = mix(col.xy, v*vec2(-1.0,1.0)*sqrt(0.125)*0.9, 0.025);
+    
+    // Original mouse interaction
+    vec2 c = fract(scuv(iMouse.xy/iResolution.xy)) * iResolution.xy;
+    vec2 dmouse = texelFetch(iChannel3, ivec2(0), 0).zw;
+    if(iMouse.x < 1.0) c = Res0 * 0.5;
+    vec2 scr = fract((pos-c)/Res0.x + 0.5) - 0.5;
+    
+    // Original center motor effect
+    if(iMouse.x < 1.0) {
+        col.xy += 0.002 * cos(iTime*0.3-vec2(0.0,1.57)) / (dot(scr,scr)/0.09+0.99);
+    }
+    
+    // Original mouse movement effect
+    col.xy += 0.0000000001 * dmouse/(dot(scr,scr)/0.00001+0.00001);
+    
+    // Original surface texture
+    col.zw += (texture2D(iChannel1, pos/Res1*0.35).zw - 0.05) * 0.002;
+    col.zw += (texture2D(iChannel1, pos/Res1*0.7).zw - 0.05) * 0.001;
+    
+    if(iFrame <= 1) col = vec4(0.0);
+    
+    gl_FragColor = col;
+}
+`;
+
+// Add this new shader for motion tracking
+const motionFragmentShader = `
+precision highp float;
+
+uniform vec3 iResolution;
+uniform vec4 iMouse;
+uniform sampler2D iChannel0;
+
+void main() {
+    vec4 c = texelFetch(iChannel0, ivec2(0), 0);
+    vec2 m = iMouse.xy;
+    vec2 d = vec2(0.0);
+    if(iMouse.xy != iMouse.zw) {
+        d = iMouse.xy - c.xy;
+    }
+    gl_FragColor = vec4(m, d);
+}
+`;
+
+const renderFragmentShader = `
+precision highp float;
+
+uniform vec3 iResolution;
+uniform float iTime;
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
+
+#define PI2 6.283185
+#define Res (iResolution.xy)
+#define RandTex iChannel1
+
+vec2 scuv(vec2 uv) {
+    float zoom = 1.0;
+    return (uv - 0.5) * 1.2 * zoom + 0.5;
+}
+
+vec4 getCol(vec2 uv) {
+    return texture2D(iChannel0, scuv(uv));
+}
+
+float getVal(vec2 uv) {
+    return length(getCol(uv).xyz);
+}
+
+vec2 getGrad(vec2 uv, float delta) {
+    vec2 d = vec2(delta, 0.0);
+    return vec2(
+        getVal(uv + d.xy) - getVal(uv - d.xy),
+        getVal(uv + d.yx) - getVal(uv - d.yx)
+    ) / delta;
+}
+
+vec4 myenv(vec3 pos, vec3 dir, float period) {
+    vec2 envUV = vec2(dir.x, dir.z) * 0.5 + 0.5;
+    vec4 envColor = texture2D(iChannel2, envUV);
+    
+    // Enhanced metallic reflection
+    float metallic = 0.85;
+    return (envColor + 0.15) * metallic + (1.0 - metallic) * 0.5;
+}
+
+
+void main() {
+    vec2 pos = gl_FragCoord.xy;
+    vec2 uv = pos / iResolution.xy;
+    
+    vec3 n = vec3(-getGrad(uv, 1.4/iResolution.x) * 0.02, 1.0);
+    n = normalize(n);
+    
+    vec2 sc = (pos - Res * 0.5) / Res.x;
+    vec3 dir = normalize(vec3(sc, -1.0));
+    vec3 R = reflect(dir, n);
+    vec3 refl = myenv(vec3(0.0), R, 1.0).xyz;
+    
+    vec4 col = getCol(uv) + 0.5;
+    col = mix(vec4(1.0), col, 0.35);
+    col.xyz *= 0.95 + -0.05 * n;
+    col.xyz *= refl;
+    
+    gl_FragColor = vec4(col.xyz, 1.0);
+}
+`;
+
+// Vertex shader
+const vertexShader = `
+varying vec2 vUv;
+void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+
+interface RenderTargets {
+  front: THREE.WebGLRenderTarget;
+  back: THREE.WebGLRenderTarget;
+}
+
+// Update the create texture functions in your React component:
+const createNoiseTexture = (size: number): THREE.DataTexture => {
+  const data = new Float32Array(size * size * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    // More detailed noise pattern
+    data[i] = Math.random() * 2.0 - 1.0;     // Red
+    data[i + 1] = Math.random() * 2.0 - 1.0; // Green
+    data[i + 2] = Math.random() * 2.0 - 1.0; // Blue
+    data[i + 3] = 1.0;                       // Alpha
+  }
+  const texture = new THREE.DataTexture(
+    data, size, size, THREE.RGBAFormat, THREE.FloatType
+  );
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+};
+
+
+// Create motion tracking material
+const motionMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    iResolution: { value: new THREE.Vector3(1, 1, 1) },
+    iMouse: { value: new THREE.Vector4(0, 0, 0, 0) },
+    iChannel0: { value: null }
+  },
+  vertexShader,
+  fragmentShader: motionFragmentShader,
+  depthWrite: false,
+  depthTest: false
+});
+
+const createEnvTexture = (size: number): THREE.DataTexture => {
+  const data = new Float32Array(size * size * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    const x = (i/4) % size;
+    const y = Math.floor((i/4) / size);
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const dx = x - centerX;
+    const dy = y - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy) / (size / 2);
+    const angle = Math.atan2(dy, dx);
+    
+    // Enhanced metallic pattern
+    const value = (
+      Math.cos(angle * 8.0) * 0.15 +
+      Math.sin(dist * Math.PI * 6.0) * 0.25 +
+      (1.0 - dist) * 0.6
+    ) * 0.85 + 0.15;
+    
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
+    data[i + 3] = 1.0;
+  }
+  
+  const texture = new THREE.DataTexture(
+    data, size, size, THREE.RGBAFormat, THREE.FloatType
+  );
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const createRenderTarget = (width: number, height: number): THREE.WebGLRenderTarget => {
+  return new THREE.WebGLRenderTarget(width, height, {
+    format: THREE.RGBAFormat,
+    type: THREE.FloatType,
+    minFilter: THREE.LinearMipmapLinearFilter, // Change to enable mipmapping
+    magFilter: THREE.LinearFilter,
+    generateMipmaps: true, // Enable mipmap generation
+    wrapS: THREE.RepeatWrapping,
+    wrapT: THREE.RepeatWrapping,
+    depthBuffer: false,
+    stencilBuffer: false
+  });
+};
+
+const motionTarget = createRenderTarget(1, 1);
+
+const MoltenEffect: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mousePos = useRef<THREE.Vector4>(new THREE.Vector4(0, 0, 0, 0));
+  const lastMousePos = useRef<THREE.Vector2>(new THREE.Vector2(0, 0));
+  const scene = useRef<THREE.Scene>(new THREE.Scene());
+  const camera = useRef<THREE.OrthographicCamera | null>(null);
+  const renderer = useRef<THREE.WebGLRenderer | null>(null);
+  const renderTargets = useRef<RenderTargets>();
+  const simulationMaterial = useRef<THREE.ShaderMaterial>();
+  const displayMaterial = useRef<THREE.ShaderMaterial>();
+  const quad = useRef<THREE.Mesh>();
+  const frameCount = useRef<number>(0);
+  const lastTime = useRef<number>(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const currentScene = scene.current;
+
+    const initializeScene = () => {
+      console.log('Initializing Scene');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Setup camera
+      camera.current = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      // Setup renderer
+      renderer.current = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true,
+        preserveDrawingBuffer: true 
+      });
+      renderer.current.setSize(width, height);
+      container.appendChild(renderer.current.domElement);
+
+      // Create render targets
+      renderTargets.current = {
+        front: createRenderTarget(width, height),
+        back: createRenderTarget(width, height)
+      };
+
+      const textureSize = 8096;
+      const noiseTexture = createNoiseTexture(textureSize);
+      const envTexture = createEnvTexture(textureSize);
+      const motionTexture = createNoiseTexture(textureSize);
+
+      // Create shared uniforms
+      const sharedUniforms: SharedUniforms = {
+        iResolution: { value: new THREE.Vector3(width, height, 1) },
+        iTime: { value: 0 },
+        iTimeDelta: { value: 0 },
+        iFrameRate: { value: 60 },
+        iFrame: { value: 0 },
+        iChannelTime: { value: [0, 0, 0, 0] },
+        iMouse: { value: new THREE.Vector4(0, 0, 0, 0) },
+        iDate: { value: new THREE.Vector4(0, 0, 0, 0) },
+        iSampleRate: { value: 44100 },
+        iChannel0: { value: null },
+        iChannel1: { value: noiseTexture },
+        iChannel2: { value: envTexture },
+        iChannel3: { value: motionTexture },
+        iChannelResolution: { 
+          value: [
+            new THREE.Vector3(width, height, 1),
+            new THREE.Vector3(textureSize, textureSize, 1),
+            new THREE.Vector3(textureSize, textureSize, 1),
+            new THREE.Vector3(textureSize, textureSize, 1)
+          ]
+        }
+      };
+
+      // Create simulation material
+      simulationMaterial.current = new THREE.ShaderMaterial({
+        uniforms: {
+          ...sharedUniforms,
+          iChannel0: { value: null }
+        },
+        vertexShader,
+        fragmentShader: simulationFragmentShader,
+        depthWrite: false,
+        depthTest: false
+      });
+
+      // Create display material
+      displayMaterial.current = new THREE.ShaderMaterial({
+        uniforms: {
+          ...sharedUniforms,
+          iChannel0: { value: null }
+        },
+        vertexShader,
+        fragmentShader: renderFragmentShader,
+        depthWrite: false,
+        depthTest: false
+      });
+
+      // Create geometry and mesh
+      const geometry = new THREE.PlaneGeometry(2, 2);
+      quad.current = new THREE.Mesh(geometry, displayMaterial.current);
+      scene.current.add(quad.current);
+
+      // Initialize simulation data with enhanced randomization
+      const initialData = new Float32Array(width * height * 4);
+      for (let i = 0; i < initialData.length; i += 4) {
+        initialData[i] = (Math.random() * 2.0 - 1.0) * 0.1;     // Red
+        initialData[i + 1] = (Math.random() * 2.0 - 1.0) * 0.1; // Green
+        initialData[i + 2] = 0;
+        initialData[i + 3] = 1;
+      }
+
+      // Upload initial data
+      const tempTexture = new THREE.DataTexture(
+        initialData, width, height, THREE.RGBAFormat, THREE.FloatType
+      );
+      tempTexture.needsUpdate = true;
+
+      // Initial render to both targets
+      if (renderer.current && renderTargets.current && camera.current && quad.current && simulationMaterial.current) {
+        quad.current.material = simulationMaterial.current;
+        simulationMaterial.current.uniforms.iChannel0.value = tempTexture;
+
+        renderer.current.setRenderTarget(renderTargets.current.front);
+        renderer.current.render(currentScene, camera.current);
+        renderer.current.setRenderTarget(renderTargets.current.back);
+        renderer.current.render(currentScene, camera.current);
+        
+        quad.current.material = displayMaterial.current;
+      }
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!displayMaterial.current || !simulationMaterial.current) return;
+      
+      const rect = container.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = rect.height - (event.clientY - rect.top);
+      
+      const mouseVel = new THREE.Vector2()
+        .set(x, y)
+        .sub(lastMousePos.current)
+        .multiplyScalar(30.0); // Increased mouse influence
+      
+      // Add mouse button state (w component indicates click state)
+      mousePos.current.set(x, y, mouseVel.x, mouseVel.y);
+      if (event.buttons > 0) {
+        mousePos.current.w = 1.0; // Mouse is pressed
+      } else {
+        mousePos.current.w = 0.0;
+      }
+      
+      displayMaterial.current.uniforms.iMouse.value.copy(mousePos.current);
+      simulationMaterial.current.uniforms.iMouse.value.copy(mousePos.current);
+      
+      lastMousePos.current.set(x, y);
+    };
+    
+    // Add mousedown and mouseup handlers
+    container.addEventListener('mousedown', () => {
+      if (displayMaterial.current && simulationMaterial.current) {
+        mousePos.current.w = 1.0;
+        displayMaterial.current.uniforms.iMouse.value.w = 1.0;
+        simulationMaterial.current.uniforms.iMouse.value.w = 1.0;
+      }
+    });
+    
+    container.addEventListener('mouseup', () => {
+      if (displayMaterial.current && simulationMaterial.current) {
+        mousePos.current.w = 0.0;
+        displayMaterial.current.uniforms.iMouse.value.w = 0.0;
+        simulationMaterial.current.uniforms.iMouse.value.w = 0.0;
+      }
+    });
+    
+    const animate = (time: number) => {
+      if (!simulationMaterial.current || !displayMaterial.current || 
+          !renderTargets.current || !renderer.current || !camera.current || !quad.current) return;
+
+      // In your animation loop, add motion tracking step before simulation:
+motionMaterial.uniforms.iChannel0.value = motionTarget.texture;
+renderer.current.setRenderTarget(motionTarget);
+renderer.current.render(scene.current, camera.current);
+
+// Update simulation uniforms to use motion tracking
+simulationMaterial.current.uniforms.iChannel3.value = motionTarget.texture;
+
+      const timeDelta = time - lastTime.current;
+      lastTime.current = time;
+
+      // Update uniforms
+      const timeValue = time * 0.001;
+      simulationMaterial.current.uniforms.iTime.value = timeValue;
+      simulationMaterial.current.uniforms.iTimeDelta.value = timeDelta * 0.001;
+      simulationMaterial.current.uniforms.iFrame.value = frameCount.current;
+      
+      displayMaterial.current.uniforms.iTime.value = timeValue;
+      displayMaterial.current.uniforms.iTimeDelta.value = timeDelta * 0.001;
+      displayMaterial.current.uniforms.iFrame.value = frameCount.current;
+
+      // Simulation step
+      quad.current.material = simulationMaterial.current;
+      simulationMaterial.current.uniforms.iChannel0.value = renderTargets.current.front.texture;
+      
+      renderer.current.setRenderTarget(renderTargets.current.back);
+      renderer.current.render(scene.current, camera.current);
+
+      // Display step
+      quad.current.material = displayMaterial.current;
+      displayMaterial.current.uniforms.iChannel0.value = renderTargets.current.back.texture;
+      
+      renderer.current.setRenderTarget(null);
+      renderer.current.render(scene.current, camera.current);
+
+      // Swap buffers
+      const temp = renderTargets.current.front;
+      renderTargets.current.front = renderTargets.current.back;
+      renderTargets.current.back = temp;
+
+      frameCount.current++;
+    };
+
+    try {
+      initializeScene();
+      container.addEventListener('mousemove', handleMouseMove);
+      lastTime.current = performance.now();
+      renderer.current?.setAnimationLoop(animate);
+    } catch (error) {
+      console.error('Error during initialization:', error);
+    }
+
+    return () => {
+      renderer.current?.setAnimationLoop(null);
+      container.removeEventListener('mousemove', handleMouseMove);
+      
+      renderTargets.current?.front.dispose();
+      renderTargets.current?.back.dispose();
+      renderTargets.current = undefined;
+      
+      renderer.current?.dispose();
+      renderer.current = null;
+      
+      camera.current = null;
+      simulationMaterial.current = undefined;
+      displayMaterial.current = undefined;
+      
+      currentScene.clear(); // Use captured reference instead of scene.current
+    };
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full h-full absolute top-0 left-0"
+      style={{ touchAction: 'none' }}
+    />
+  );
+};
+
+export default MoltenEffect;

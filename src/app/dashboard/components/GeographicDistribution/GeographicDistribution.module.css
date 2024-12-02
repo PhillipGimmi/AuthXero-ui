@@ -1,0 +1,7 @@
+/* GeographicDistribution.module.css */
+
+.recharts-tooltip-cursor {
+    fill: transparent !important; /* Ensures the cursor background is fully transparent */
+    stroke: none !important; /* Removes any stroke color */
+  }
+  

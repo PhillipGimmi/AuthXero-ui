@@ -1,0 +1,824 @@
+'use client';
+
+import React, { 
+  useEffect, 
+  useRef, 
+  useMemo, 
+  useCallback, 
+  useState, 
+  useLayoutEffect 
+} from 'react';
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+import Image from 'next/image';
+
+// Types and Interfaces
+interface TextRef {
+    current: HTMLSpanElement | null;
+  }
+  
+  interface TextOverlayProps {
+    textRefs: TextRef[];
+    onLetterPositionChange: () => void;
+  }
+
+// Shader Sources
+const vertexShaderSource = `
+  attribute vec2 aPosition;
+  uniform float iRotation;
+  void main() {
+    float c = cos(iRotation);
+    float s = sin(iRotation);
+    vec2 rotatedPosition = vec2(
+      aPosition.x * c - aPosition.y * s,
+      aPosition.x * s + aPosition.y * c
+    );
+    gl_Position = vec4(rotatedPosition, 0.0, 1.0);
+  }
+`;
+
+const fragmentShaderSource = `
+  precision highp float;
+  uniform vec2 iResolution;
+  uniform float iTime;
+  uniform float iLightningIntensity;
+  uniform vec3 iColor;
+  uniform vec2 iImpactPoint;
+  uniform float iImpactTime;
+  uniform vec2 uTextPositions[8];
+  uniform float uTextOpacities[8];
+  uniform float uPixelRadius;
+  uniform float iAspectRatio;
+  float pixelRadius = uPixelRadius; // Use the dynamic value
+  float uvRadius = (pixelRadius / iResolution.y) * 2.0;
+
+
+
+  float hash11(float p) {
+    p = fract(p * .1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
+  }
+
+  float hash12(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+  }
+
+  mat2 rotate2d(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat2(c, -s, s, c);
+  }
+
+  float noise(vec2 p) {
+    vec2 ip = floor(p);
+    vec2 fp = fract(p);
+    float a = hash12(ip);
+    float b = hash12(ip + vec2(1, 0));
+    float c = hash12(ip + vec2(0, 1));
+    float d = hash12(ip + vec2(1, 1));
+    vec2 t = smoothstep(0.0, 1.0, fp);
+    return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+  }
+
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    for(int i = 0; i < 6; i++) {
+      value += amplitude * noise(p);
+      p *= rotate2d(0.5);
+      p *= 2.0;
+      amplitude *= 0.5;
+    }
+    return value;
+  }
+
+  vec3 sphereNormal(vec2 uv, float radius) {
+    float r = length(uv);
+    if (r > radius) return vec3(0.0);
+    float z = sqrt(radius * radius - r * r);
+    return normalize(vec3(uv, z));
+  }
+
+  vec3 envMap(vec3 r) {
+    float t = iTime * 0.1;
+    vec2 uv = vec2(atan(r.z, r.x) + t, asin(r.y));
+    float env = fbm(uv * 1.0) * 0.1 + 0.1;
+    return mix(vec3(0.2, 0.3, 0.4), vec3(1.0), env);
+  }
+
+  float specular(vec3 n, vec3 l, vec3 v, float roughness) {
+    vec3 h = normalize(l + v);
+    float ndoth = max(dot(n, h), 0.0);
+    return pow(ndoth, 1.0 / roughness);
+  }
+
+float drawSphere(vec2 uv, float radius) {
+    float sphere = length(uv) - radius;
+    float refraction = fbm(uv * 3.0 + iTime * 0.1) * 0.02;
+    return sphere + refraction * 0.1;
+}
+
+vec3 getLightningEffect(vec2 uv, float intensity, vec3 lightningColor) {
+    vec2 modifiedUV = uv;
+    modifiedUV += 2.0 * fbm(modifiedUV + 0.8 * iTime) - 1.0;
+    float dist = abs(modifiedUV.x);
+    
+    // Make lightning much thinner
+    float lightningWidth = 1.1; // Very thin lightning
+    float lightningStrength = pow(mix(0.0, 0.05 * intensity, hash11(iTime)) / (dist + lightningWidth), 2.0);
+    
+    return lightningColor * lightningStrength;
+}
+
+vec3 getPulsatingLight(vec2 uv, float intensity, vec3 lightColor) {
+    // Reduce the pixel radius significantly (was 50.0)
+    float pixelRadius = 20.0; // Smaller radius
+    float uvRadius = (pixelRadius / iResolution.y) * 2.0;
+    
+    float dist = length(uv);
+    
+    // Add pulsing effect synced with lightning
+    float lightningPulse = sin(iTime * 10.0) * 0.5 + 0.5; // Same frequency as lightning
+    float noisePulse = fbm(uv * 2.0 + iTime * 0.5) * 0.3;
+    
+    // Make the edge sharper and add lightning-synced pulsing
+    float glow = smoothstep(uvRadius * (1.0 + lightningPulse * 0.2), 
+                          uvRadius * (0.9 + lightningPulse * 0.2), 
+                          dist);
+    
+    // Add noise affected by lightning intensity
+    glow *= 1.0 + noisePulse * intensity;
+    
+    // Modulate the intensity with the lightning
+    float finalIntensity = intensity * (0.8 + lightningPulse * 0.2);
+    
+    vec3 finalColor = lightColor * glow * finalIntensity;
+    
+    return finalColor;
+}
+
+vec3 getInnerSphereColor(vec2 uv, float dist, vec3 lightningColor, float intensity) {
+    vec3 n = sphereNormal(uv, 0.25);
+    vec3 v = normalize(vec3(uv, 1.0));
+    
+    vec3 baseColor = vec3(0.5, 0.5, 0.5);
+    // Increase the lightning multiplier to make thin lines more visible
+    vec3 lightning = getLightningEffect(uv, intensity, vec3(0.0, 0.0, 0.0)) * 5.0;
+    
+    float fresnel = pow(1.0 - max(dot(n, v), 0.0), 2.0);
+    
+    return mix(baseColor, baseColor - lightning, intensity);
+}
+
+  vec3 getMetallicColor(float dist, vec2 uv, vec3 lightningColor, float intensity) {
+    vec3 n = sphereNormal(uv, 0.5);
+    vec3 v = normalize(vec3(uv, 1.0));
+    
+    vec3 l1 = normalize(vec3(cos(iTime), sin(iTime), 1.0));
+    vec3 l2 = normalize(vec3(-0.5, 0.5, 0.8));
+    vec3 l3 = normalize(vec3(uv * 2.0, 0.5));
+    
+    vec3 baseColor = mix(vec3(0.8, 0.8, 0.9), lightningColor, 0.1);
+    vec3 r = reflect(-v, n);
+    vec3 envColor = envMap(r);
+    
+    float spec1 = specular(n, l1, v, 0.1) * 0.5;
+    float spec2 = specular(n, l2, v, 0.1) * 0.5;
+    float specLightning = specular(n, l3, v, 0.05) * intensity * 0.3;
+    
+    float fresnel = pow(1.0 - max(dot(n, v), 0.0), 1.0);
+    vec3 lightning = getLightningEffect(uv, intensity, lightningColor);
+    
+    vec3 finalColor = baseColor * 0.2;
+    finalColor += baseColor * max(dot(n, l1), 0.0) * 0.4;
+    finalColor += vec3(1.0) * (spec1 + spec2);
+    finalColor += lightning * fresnel * 2.0;
+    finalColor += envColor * fresnel * 0.6;
+    finalColor += vec3(1.0) * specLightning;
+    finalColor += lightning * 0.5;
+    
+    return finalColor;
+  }
+
+  vec3 getExternalLightning(vec2 uv, vec2 originalUV, vec3 lightningColor, float intensity) {
+    vec2 modifiedUV = originalUV;
+    modifiedUV += 2.0 * fbm(modifiedUV + 0.8 * iTime) - 1.0;
+    float dist = abs(modifiedUV.x);
+    float lightningIntensity = pow(mix(0.0, 0.07 * intensity, hash11(iTime)) / dist, 1.0);
+    
+    float gradient = smoothstep(0.45, 0.55, uv.y);
+    return mix(vec3(lightningIntensity), lightningColor * lightningIntensity, gradient);
+  }
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.xy;
+vec2 originalUV = fragCoord / iResolution.xy * 2.0 - 1.0;
+originalUV.x *= iResolution.x / iResolution.y; 
+
+    // Remove the flippedUV as it was only used for inner sphere
+    // vec2 flippedUV = originalUV;
+    // flippedUV.x = -flippedUV.x;
+
+    float outerSphereDist = drawSphere(originalUV, 0.5);
+    // Remove inner sphere distance calculation
+    // float innerSphereDist = drawSphere(flippedUV, 0.25);
+    float lightningIntensity = iLightningIntensity * (1.0 + 0.5 * sin(iTime * 1.0));
+
+    vec3 outerSphereColor = getMetallicColor(outerSphereDist, originalUV, iColor, lightningIntensity);
+    // Remove inner sphere color calculation
+    // vec3 innerSphereColor = getInnerSphereColor(flippedUV, innerSphereDist, iColor, lightningIntensity);
+    vec3 externalLightning = getExternalLightning(uv, originalUV, iColor, lightningIntensity);
+
+    vec3 finalColor = externalLightning;
+
+    // Remove inner sphere check
+    // if (innerSphereDist < 0.0) {
+    //     finalColor = innerSphereColor;
+    // }
+    if (outerSphereDist < 0.0) {
+        finalColor = mix(finalColor, outerSphereColor, 0.8);
+    }
+
+    float atmosphereGlow = smoothstep(0.5, 0.7, length(originalUV));
+    finalColor += iColor * atmosphereGlow * lightningIntensity * 0.2;
+
+    fragColor = vec4(finalColor, 1.0);
+}
+  void main() {
+    vec4 color;
+    mainImage(color, gl_FragCoord.xy);
+    gl_FragColor = color;
+  }
+`;
+
+interface CenterPoint {
+    x: number;
+    y: number;
+  }
+  
+  const LogoOverlay: React.FC = () => {
+    const logoContainerRef = useRef<HTMLDivElement>(null);
+    const logoRefs = useRef<Array<HTMLDivElement | null>>([null, null, null]);
+    const progressRef = useRef<number>(0);
+    const centerPointRef = useRef<CenterPoint>({ x: 0, y: 0 });
+  
+    // Function to calculate exact pixel center
+    const calculateExactCenter = useCallback((): CenterPoint => {
+      const viewportWidth = Math.round(window.innerWidth);
+      const viewportHeight = Math.round(window.innerHeight);
+      
+      // Ensure we're using integer division for pixel-perfect center
+      return {
+        x: Math.floor(viewportWidth / 2),
+        y: Math.floor(viewportHeight / 2)
+      };
+    }, []);
+  
+    // Calculate exact logo positions based on center point
+    const calculateLogoPosition = useCallback((angle: number, radius: number, center: CenterPoint) => {
+      const radian = (angle * Math.PI) / 180;
+      return {
+        x: Math.round(center.x + Math.cos(radian) * radius),
+        y: Math.round(center.y + Math.sin(radian) * radius)
+      };
+    }, []);
+  
+    useLayoutEffect(() => {
+      gsap.registerPlugin(ScrollTrigger);
+  
+      const logos = logoRefs.current;
+      if (!logos.every(Boolean)) return;
+  
+      // Initial calculation of center point
+      centerPointRef.current = calculateExactCenter();
+  
+      // Calculate radius based on viewport dimensions
+      const getRadius = () => {
+        const center = centerPointRef.current;
+        // Use Pythagorean theorem to calculate suitable radius
+        const maxRadius = Math.min(center.x, center.y);
+        return Math.round(maxRadius * 0.75); // 75% of max possible radius
+      };
+  
+      const initialAngles = [-90, 30, 150]; // Top, Bottom Right, Bottom Left
+  
+      const positionLogos = (progressRotation = 0) => {
+        const radius = getRadius();
+        const center = centerPointRef.current;
+  
+        logos.forEach((logo, i) => {
+          if (logo) {
+            const currentAngle = initialAngles[i] + progressRotation;
+            const pos = calculateLogoPosition(currentAngle, radius, center);
+            
+            // Calculate angle to point exactly at center
+            const deltaX = center.x - pos.x;
+            const deltaY = center.y - pos.y;
+            const pointingAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI) + 90;
+  
+            gsap.set(logo, {
+              x: pos.x - Math.round(logo.offsetWidth / 2),  // Adjust for logo width
+              y: pos.y - Math.round(logo.offsetHeight / 2), // Adjust for logo height
+              rotation: pointingAngle,
+              transformOrigin: '50% 50%',
+            });
+          }
+        });
+      };
+  
+      // Initial positioning
+      positionLogos();
+  
+      ScrollTrigger.create({
+        trigger: logoContainerRef.current,
+        start: 'top top',
+        end: '+=300%',
+        scrub: 1,
+        onUpdate: (self) => {
+          progressRef.current = self.progress;
+          positionLogos(self.progress * 360);
+        }
+      });
+  
+      // Handle resize with recalculation
+      const handleResize = () => {
+        centerPointRef.current = calculateExactCenter();
+        positionLogos(progressRef.current * 360);
+      };
+  
+      window.addEventListener('resize', handleResize);
+  
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        ScrollTrigger.getAll().forEach(t => t.kill());
+      };
+    }, [calculateExactCenter, calculateLogoPosition]);
+  
+    return (
+      <div 
+        ref={logoContainerRef} 
+        className="fixed inset-0 pointer-events-none overflow-visible"
+        style={{ position: 'fixed', width: '100vw', height: '100vh' }}
+      >
+        {[0, 1, 2].map((index) => (
+          <div
+            key={index}
+            ref={el => {
+              logoRefs.current[index] = el;
+            }}
+            className="absolute w-20 h-20 md:w-28 md:h-28"
+            style={{
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+              transformOrigin: '50% 50%',
+              position: 'absolute',
+              left: 0,
+              top: 0
+            }}
+          >
+            <Image
+              src="/logo.svg"
+              alt={`Logo ${index + 1}`}
+              layout="fill"
+              objectFit="contain"
+              className="opacity-85 mix-blend-overlay transform-gpu"
+              priority
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+// TextOverlay Component
+const TextOverlay: React.FC<TextOverlayProps> = ({ textRefs, onLetterPositionChange }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const taglineRef = useRef<HTMLDivElement>(null);
+    const textContainerRef = useRef<HTMLDivElement>(null);
+    const [taglineColors, setTaglineColors] = useState<string[]>([]);
+  
+    useLayoutEffect(() => {
+      const calculateTaglineColors = () => {
+        const taglineElement = taglineRef.current;
+        const containerElement = containerRef.current;
+  
+        if (!taglineElement || !containerElement) return;
+  
+        const containerRect = containerElement.getBoundingClientRect();
+        const sphereCenter = {
+          x: containerRect.width / 2,
+          y: containerRect.height / 2,
+        };
+        const sphereRadius = containerRect.width * 0.25;
+  
+        const newColors: string[] = [];
+        Array.from(taglineElement.children).forEach((child) => {
+          const letterBox = child.getBoundingClientRect();
+          const letterCenter = {
+            x: (letterBox.left + letterBox.right) / 2,
+            y: (letterBox.top + letterBox.bottom) / 2,
+          };
+  
+          const distFromSphereCenter = Math.sqrt(
+            Math.pow(letterCenter.x - sphereCenter.x, 2) +
+              Math.pow(letterCenter.y - sphereCenter.y, 2)
+          );
+  
+          newColors.push(distFromSphereCenter < sphereRadius ? 'black' : 'white');
+        });
+  
+        setTaglineColors(newColors);
+      };
+  
+      window.addEventListener('resize', calculateTaglineColors);
+      window.addEventListener('scroll', calculateTaglineColors);
+      calculateTaglineColors();
+  
+      return () => {
+        window.removeEventListener('resize', calculateTaglineColors);
+        window.removeEventListener('scroll', calculateTaglineColors);
+      };
+    }, []);
+  
+    useLayoutEffect(() => {
+      gsap.registerPlugin(ScrollTrigger);
+  
+      const dashLetters = textRefs.slice(0, 4);
+      const authLetters = textRefs.slice(4);
+      const logos = document.querySelectorAll('.logo-element');
+  
+      gsap.set(dashLetters.map((ref) => ref.current), { x: '-100vw', opacity: 0 });
+      gsap.set(authLetters.map((ref) => ref.current), { x: '100vw', opacity: 0 });
+      gsap.set(taglineRef.current, { y: '50px', opacity: 0 });
+      gsap.set(textContainerRef.current, { y: 0 });
+      gsap.set(logos, { scale: 0, opacity: 0 });
+  
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=300%',
+          pin: true,
+          anticipatePin: 1,
+          scrub: 1,
+          onUpdate: onLetterPositionChange,
+        },
+      });
+  
+      tl.to(dashLetters.map((ref) => ref.current), {
+        x: 0,
+        opacity: 1,
+        stagger: 0.1,
+        duration: 1,
+        ease: 'power2.out',
+      })
+        .to(
+          authLetters.map((ref) => ref.current),
+          {
+            x: 0,
+            opacity: 1,
+            stagger: 0.1,
+            duration: 1,
+            ease: 'power2.out',
+          },
+          '<'
+        )
+        .to(taglineRef.current, {
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: 'power2.out',
+        })
+        .to(logos, {
+          scale: 1,
+          opacity: 1,
+          stagger: 0.2,
+          duration: 0.5,
+          ease: 'back.out',
+        });
+  
+      return () => {
+        ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      };
+    }, [textRefs, onLetterPositionChange]);
+  
+    return (
+      <div ref={containerRef} className="relative w-full h-full flex flex-col items-center justify-center min-h-[100vh]">
+        <div ref={textContainerRef} className="flex flex-col items-center justify-center w-full">
+          <div className="flex flex-col md:flex-row justify-center w-full px-4 md:px-20 gap-8 md:gap-16">
+            <div className="flex justify-center md:justify-start">
+              {['D', 'A', 'S', 'H'].map((char, idx) => (
+                <span
+                  key={`dash-${char}`}
+                  ref={textRefs[idx]}
+                  className="px-2 md:px-4 text-4xl md:text-8xl font-bold tracking-wider transition-colors duration-200"
+                  style={{ color: 'white' }}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
+  
+            <div className="flex justify-center md:justify-start">
+              {['A', 'U', 'T', 'H'].map((char, idx) => (
+                <span
+                  key={`auth-${char}`}
+                  ref={textRefs[idx + 4]}
+                  className="px-2 md:px-4 text-4xl md:text-8xl font-bold tracking-wider transition-colors duration-200"
+                  style={{ color: 'white' }}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
+          </div>
+  
+          <div
+  ref={taglineRef}
+  className="mt-8 text-center text-lg md:text-2xl font-light px-4 flex justify-center flex-wrap"
+>
+  {[
+    'Simple,',
+    '\u00A0',
+    'powerful',
+    '\u00A0',
+    'authentication',
+    '\u00A0',
+    'with',
+    '\u00A0',
+    'dashboards',
+    '\u00A0',
+    'and',
+    '\u00A0',
+    'compliance',
+  ].map((word, idx) => (
+    <span
+      key={`${word}-${idx}`} // Unique key using the word and index
+      className="transition-colors duration-300"
+      style={{ color: taglineColors[idx] ?? 'white' }} // Nullish coalescing
+    >
+      {word}
+    </span>
+  ))}
+</div>
+        </div>
+      </div>
+    );
+  };
+// WebGL Utility Functions remain the same
+const createShader = (gl: WebGLRenderingContext, source: string, type: number): WebGLShader | null => {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+};
+
+const createGLProgram = (
+  gl: WebGLRenderingContext,
+  vertexShaderSource: string,
+  fragmentShaderSource: string
+): WebGLProgram | null => {
+  const vertexShader = createShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
+  const fragmentShader = createShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+  
+  if (!vertexShader || !fragmentShader) return null;
+
+  const program = gl.createProgram();
+  if (!program) return null;
+
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+
+  return program;
+};
+
+  // Main WebGL Canvas Component
+  const WebGLCanvas: React.FC = () => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const lastTriggerRef = useRef<number>(0);
+    const nextTriggerRef = useRef<number>(0);
+    const currentBoltRef = useRef<number>(-1);
+    const letterRefs = useRef(Array(8).fill(null).map(() => React.createRef<HTMLSpanElement>()));
+    const mousePositionRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
+    const [impactTime, setImpactTime] = useState<number>(0);
+    const programRef = useRef<WebGLProgram | null>(null);
+    const glRef = useRef<WebGLRenderingContext | null>(null);  
+
+    useLayoutEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
+    
+        // Create main scroll trigger for the entire component
+        const mainTrigger = ScrollTrigger.create({
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=300%',
+          pin: true,
+          anticipatePin: 1,
+          scrub: 1,
+          onLeave: (self) => {
+            self.scroll(self.start); // Reset scroll position when leaving
+            self.refresh();
+          }
+        });
+    
+        return () => {
+          mainTrigger.kill();
+        };
+      }, []);
+  
+    const lightningColors = useMemo(() => [
+      { rgb: [0.2, 0.3, 0.8], css: '#3349cc' },
+      { rgb: [1.0, 0.7, 0.3], css: '#ffb34d' },
+      { rgb: [1.0, 0.3, 0.7], css: '#ff4db3' },
+      { rgb: [0.7, 1.0, 0.3], css: '#b3ff4d' },
+      { rgb: [0.5, 0.3, 1.0], css: '#8047ff' },
+      { rgb: [1.0, 1.0, 0.3], css: '#ffff4d' },
+      { rgb: [0.3, 1.0, 0.7], css: '#4dffb3' },
+      { rgb: [1.0, 0.3, 0.3], css: '#ff4d4d' },
+    ], []);
+  
+    const handleLetterPositionChange = useCallback(() => {
+      if (!glRef.current || !programRef.current) return;
+      
+      const positions: number[] = [];
+      const opacities: number[] = [];
+  
+      letterRefs.current.forEach(ref => {
+        if (ref.current) {
+          const rect = ref.current.getBoundingClientRect();
+          const centerX = (rect.left + rect.right) / 2;
+          const centerY = (rect.top + rect.bottom) / 2;
+          
+          // Convert to GL coordinates
+          const x = (centerX / window.innerWidth) * 2 - 1;
+          const y = -(centerY / window.innerHeight) * 2 + 1;
+          
+          positions.push(x, y);
+          
+          // Check if over sphere
+          const distFromCenter = Math.sqrt(x * x + y * y);
+          opacities.push(distFromCenter < 0.5 ? 1.0 : 0.0);
+  
+          // Update text color based on sphere intersection
+          if (ref.current) {
+            ref.current.style.color = distFromCenter < 0.5 ? 'black' : 'white';
+          }
+        }
+      });
+  
+      const gl = glRef.current;
+      const program = programRef.current;
+  
+      const posLoc = gl.getUniformLocation(program, 'uTextPositions');
+      const opacityLoc = gl.getUniformLocation(program, 'uTextOpacities');
+      
+      gl.uniform2fv(posLoc, new Float32Array(positions));
+      gl.uniform1fv(opacityLoc, new Float32Array(opacities));
+    }, []);
+  
+    const setupWebGL = useCallback((gl: WebGLRenderingContext) => {
+        const program = createGLProgram(gl, vertexShaderSource, fragmentShaderSource);
+        if (!program) return null;
+      
+        gl.useProgram(program);
+      
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+          gl.STATIC_DRAW
+        );
+      
+        const aPosition = gl.getAttribLocation(program, 'aPosition');
+        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aPosition);
+      
+        programRef.current = program;
+        glRef.current = gl;
+      
+        return {
+          program,
+          uniforms: {
+            iResolution: gl.getUniformLocation(program, 'iResolution'),
+            iTime: gl.getUniformLocation(program, 'iTime'),
+            iLightningIntensity: gl.getUniformLocation(program, 'iLightningIntensity'),
+            iColor: gl.getUniformLocation(program, 'iColor'),
+            iImpactPoint: gl.getUniformLocation(program, 'iImpactPoint'),
+            iImpactTime: gl.getUniformLocation(program, 'iImpactTime'),
+            uTextPositions: gl.getUniformLocation(program, 'uTextPositions'),
+            uTextOpacities: gl.getUniformLocation(program, 'uTextOpacities'),
+            uPixelRadius: gl.getUniformLocation(program, 'uPixelRadius'), // Added
+          }
+        };
+      }, []);   
+  
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+  
+      const gl = canvas.getContext('webgl');
+      if (!gl) return;
+  
+      const resizeCanvas = () => {
+        const dpr = window.devicePixelRatio || 1; // Account for device pixel ratio
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr; // Use the actual clientHeight without limitations
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    
+        // Update iResolution uniform to match the canvas size
+        gl.uniform2f(uniforms.iResolution, canvas.width, canvas.height);
+    
+        // Optionally handle any other size-related calculations here
+        handleLetterPositionChange(); // Recalculate if text positions depend on the canvas size
+    };
+    
+  
+      const setup = setupWebGL(gl);
+      if (!setup) return;
+      const { uniforms } = setup;
+  
+      const handleMouseMove = (event: MouseEvent) => {
+        const rect = canvas.getBoundingClientRect();
+        mousePositionRef.current = {
+          x: (event.clientX - rect.left) / rect.width * 2 - 1,
+          y: (event.clientY - rect.top) / rect.height * 2 - 1
+        };
+      };
+  
+      const handleClick = () => {
+        setImpactTime(performance.now() * 0.001);
+      };
+
+      const resizeSphere = () => {
+        const newRadius = Math.max(window.innerWidth, window.innerHeight) / 10;
+        gl.uniform1f(uniforms.uPixelRadius, newRadius);
+      };
+      
+      window.addEventListener('resize', resizeSphere);      
+  
+      const render = (time: number) => {
+        const currentPixelRadius = 1; // Change this to dynamically adjust size
+        gl.uniform1f(uniforms.uPixelRadius, currentPixelRadius);
+        const currentTime = time * 0.001;
+  
+        if (currentTime >= nextTriggerRef.current) {
+          lastTriggerRef.current = currentTime;
+          currentBoltRef.current = Math.floor(Math.random() * 8);
+          nextTriggerRef.current = currentTime + 3 + Math.random() * 2;
+        }
+  
+        gl.uniform2f(uniforms.iResolution, canvas.width, canvas.height);
+        gl.uniform1f(uniforms.iTime, currentTime);
+        gl.uniform1f(uniforms.iLightningIntensity, 1.5);
+        gl.uniform3fv(uniforms.iColor, new Float32Array(lightningColors[currentBoltRef.current]?.rgb || [0.2, 0.3, 0.8]));
+        gl.uniform2f(uniforms.iImpactPoint, mousePositionRef.current.x, mousePositionRef.current.y);
+        gl.uniform1f(uniforms.iImpactTime, impactTime);
+  
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+  
+        requestAnimationFrame(render);
+      };
+  
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('click', handleClick);
+      requestAnimationFrame(render);
+  
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+        canvas.removeEventListener('mousemove', handleMouseMove);
+        canvas.removeEventListener('click', handleClick);
+        if (programRef.current) gl.deleteProgram(programRef.current);
+      };
+    }, [setupWebGL, lightningColors, impactTime, handleLetterPositionChange]);
+  
+return (
+    <div ref={containerRef} className="fixed top-0 left-0 w-full h-screen overflow-hidden bg-black">
+      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full opacity-90" />
+          <LogoOverlay />
+          <TextOverlay 
+            textRefs={letterRefs.current}
+            onLetterPositionChange={handleLetterPositionChange}
+          />
+        </div>
+      );
+    };
+  
+  export default WebGLCanvas;
