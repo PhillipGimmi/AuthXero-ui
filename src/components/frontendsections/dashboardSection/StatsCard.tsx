@@ -60,12 +60,12 @@ const CustomTooltipWrapper: React.FC<TooltipProps<number, string>> = ({
     return (
       <div
         style={{
-          maxWidth: '400px', // Wider tooltip
+          maxWidth: '400px',
           padding: '12px 16px',
-          display: 'flex', // Use flexbox for horizontal alignment
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
-          gap: '16px', // Space between sections
+          gap: '16px',
           backgroundColor: '#1A1A1A',
           borderRadius: '8px',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -100,7 +100,6 @@ const CustomTooltipWrapper: React.FC<TooltipProps<number, string>> = ({
   return null;
 };
 
-
 const StatsCard: React.FC<StatsCardProps> = ({ stat, index }) => {
   const [showGraph, setShowGraph] = useState(false);
   const [tooltipConfig, setTooltipConfig] = useState<{ text: string; position: { x: number; y: number } } | null>(null);
@@ -117,8 +116,14 @@ const StatsCard: React.FC<StatsCardProps> = ({ stat, index }) => {
   };
 
   const toggleView = () => {
+    setTooltipConfig(null);
     setPage([page === 0 ? 1 : 0, page === 0 ? 1 : -1]);
     setShowGraph(!showGraph);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTooltipConfig(null);
   };
 
   const IconComponent = stat.icon;
@@ -132,35 +137,93 @@ const StatsCard: React.FC<StatsCardProps> = ({ stat, index }) => {
               <IconComponent className="h-5 w-5 text-zinc-400" />
               <span className="text-sm text-zinc-400">{stat.label}</span>
             </div>
-            <input type="button" value={`${stat.change >= 0 ? "▲" : "▼"} ${Math.abs(stat.change)}%`} className={`text-sm font-medium ${stat.change >= 0 ? "text-green-400" : "text-red-400"} flex items-center gap-1 cursor-pointer`} onClick={(e) => { e.stopPropagation(); }} onMouseEnter={(e) => handleMouseEnter(e, "24h trend")} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltipConfig(null)} aria-label={`Change: ${stat.change >= 0 ? "Increase" : "Decrease"} ${Math.abs(stat.change)}%`} tabIndex={0} />
+            <input 
+              type="button" 
+              value={`${stat.change >= 0 ? "▲" : "▼"} ${Math.abs(stat.change)}%`} 
+              className={`text-sm font-medium ${stat.change >= 0 ? "text-green-400" : "text-red-400"} flex items-center gap-1 cursor-pointer`} 
+              onClick={handleClick}
+              onMouseEnter={(e) => handleMouseEnter(e, "24h trend")} 
+              onMouseMove={handleMouseMove} 
+              onMouseLeave={() => setTooltipConfig(null)} 
+              aria-label={`Change: ${stat.change >= 0 ? "Increase" : "Decrease"} ${Math.abs(stat.change)}%`} 
+              tabIndex={0}
+            />
           </div>
           <div className="relative overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               {!showGraph ? (
-                <motion.div key="value" custom={direction} variants={contentVariants.value} initial="enter" animate="center" exit="exit" transition={{ type: "tween", duration: 0.3 }} className="text-center py-2">
-                  <motion.div className="text-6xl font-bold text-white mb-1" onMouseEnter={(e) => handleMouseEnter(e, stat.description)} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltipConfig(null)} whileHover={{ textShadow: "0 0 8px rgba(255,255,255,0.5)" }}>
+                <motion.div 
+                  key="value" 
+                  custom={direction} 
+                  variants={contentVariants.value} 
+                  initial="enter" 
+                  animate="center" 
+                  exit="exit" 
+                  transition={{ type: "tween", duration: 0.3 }} 
+                  className="text-center py-2"
+                  onMouseLeave={() => setTooltipConfig(null)}
+                >
+                  <motion.div 
+                    className="text-6xl font-bold text-white mb-1" 
+                    onMouseEnter={(e) => handleMouseEnter(e, stat.description)} 
+                    onMouseMove={handleMouseMove} 
+                    onMouseLeave={() => setTooltipConfig(null)} 
+                    whileHover={{ textShadow: "0 0 8px rgba(255,255,255,0.5)" }}
+                  >
                     {stat.value}
                   </motion.div>
                 </motion.div>
               ) : (
-                <motion.div key="graph" custom={direction} variants={contentVariants.graph} initial="enter" animate="center" exit="exit" transition={{ type: "tween", duration: 0.3 }} className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={stat.graphData}>
-                      <defs>
-                        <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
-                        </linearGradient>
-                        <clipPath id={`clip-${index}`}>
-                          <motion.rect x="0" y="0" width="100%" height="100%" initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 1, delay: 0.3, ease: "easeInOut" }} />
-                        </clipPath>
-                      </defs>
-                      <XAxis dataKey="time" tick={{ fill: "#9CA3AF" }} interval={3} />
-                      <YAxis tick={{ fill: "#9CA3AF" }} width={30} domain={stat.label === "Auth Success" ? [99.8, 100] : ["auto", "auto"]} />
-                      <Tooltip content={<CustomTooltipWrapper />} />
-                      <Area type="monotone" name={stat.label === "Auth Success" ? "successRate" : "value"} dataKey={stat.label === "Auth Success" ? "successRate" : "value"} stroke="#FFFFFF" fill={`url(#gradient-${index})`} strokeWidth={2} isAnimationActive={false} clipPath={`url(#clip-${index})`} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <motion.div 
+                  key="graph" 
+                  custom={direction} 
+                  variants={contentVariants.graph} 
+                  initial="enter" 
+                  animate="center" 
+                  exit="exit" 
+                  transition={{ type: "tween", duration: 0.3 }} 
+                  className="h-32"
+                  onMouseEnter={() => setTooltipConfig(null)}
+                >
+
+<ResponsiveContainer width="100%" height="100%">
+                  <AreaChart 
+                    data={stat.graphData}
+                    margin={{ left: 15, right: 10, top: 10, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
+                      </linearGradient>
+                      <clipPath id={`clip-${index}`}>
+                        <motion.rect x="0" y="0" width="100%" height="100%" initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 1, delay: 0.3, ease: "easeInOut" }} />
+                      </clipPath>
+                    </defs>
+                    <XAxis 
+                      dataKey="time" 
+                      tick={{ fill: "#9CA3AF" }} 
+                      interval={3} 
+                    />
+                    <YAxis 
+                      tick={{ fill: "#9CA3AF" }} 
+                      width={45}
+                      tickFormatter={(value) => value.toLocaleString()}
+                      domain={stat.label === "Auth Success" ? [99.8, 100] : ["auto", "auto"]}
+                    />
+                    <Tooltip content={<CustomTooltipWrapper />} />
+                    <Area 
+                      type="monotone" 
+                      name={stat.label === "Auth Success" ? "successRate" : "value"} 
+                      dataKey={stat.label === "Auth Success" ? "successRate" : "value"} 
+                      stroke="#FFFFFF" 
+                      fill={`url(#gradient-${index})`} 
+                      strokeWidth={2} 
+                      isAnimationActive={false} 
+                      clipPath={`url(#clip-${index})`} 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
                 </motion.div>
               )}
             </AnimatePresence>

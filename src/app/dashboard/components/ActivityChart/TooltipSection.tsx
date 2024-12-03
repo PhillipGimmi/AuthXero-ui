@@ -10,11 +10,28 @@ interface TooltipSectionProps {
 const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosition, isVisible }) => {
   if (!isVisible) return null;
 
-  // Constants for positioning calculations
-  const CURSOR_OFFSET = 8;  // Distance from cursor
-  const VIEWPORT_MARGIN = 16;  // Minimum distance from viewport edges
+  const CURSOR_OFFSET = 8;
+  const VIEWPORT_MARGIN = 16;
   const DEFAULT_WIDTH = 200;
-  const DEFAULT_HEIGHT = 40;  // Approximate height for single line tooltip
+  const DEFAULT_HEIGHT = 40;
+
+  const getColoredText = (text: string) => {
+    if (text.includes('▲')) {
+      return text.split(' ').map((word, index) => 
+        word.includes('▲') || !isNaN(parseFloat(word)) ? 
+          <span key={index} className="text-green-400">{word} </span> : 
+          <span key={index}>{word} </span>
+      );
+    }
+    if (text.includes('▼')) {
+      return text.split(' ').map((word, index) => 
+        word.includes('▼') || !isNaN(parseFloat(word)) ? 
+          <span key={index} className="text-red-400">{word} </span> : 
+          <span key={index}>{word} </span>
+      );
+    }
+    return text;
+  };
 
   const simplifyText = (text: string) => {
     if (text.toLowerCase().includes('percentage change')) {
@@ -31,7 +48,6 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     const viewportHeight = window.innerHeight;
     const simplifiedText = simplifyText(tooltipText);
     
-    // Create temporary element to measure actual tooltip dimensions
     const temp = document.createElement('div');
     temp.style.position = 'absolute';
     temp.style.visibility = 'hidden';
@@ -44,26 +60,21 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     const tooltipHeight = temp.offsetHeight || DEFAULT_HEIGHT;
     document.body.removeChild(temp);
 
-    // Initial preferred position (below and to the right of cursor)
     let left = mousePosition.x + CURSOR_OFFSET;
     let top = mousePosition.y + CURSOR_OFFSET;
 
-    // Check right edge
     if (left + tooltipWidth > viewportWidth - VIEWPORT_MARGIN) {
       left = mousePosition.x - tooltipWidth - CURSOR_OFFSET;
     }
 
-    // Check bottom edge
     if (top + tooltipHeight > viewportHeight - VIEWPORT_MARGIN) {
       top = mousePosition.y - tooltipHeight - CURSOR_OFFSET;
     }
 
-    // Check left edge
     if (left < VIEWPORT_MARGIN) {
       left = VIEWPORT_MARGIN;
     }
 
-    // Check top edge
     if (top < VIEWPORT_MARGIN) {
       top = VIEWPORT_MARGIN;
     }
@@ -86,14 +97,17 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     lineHeight: '1.2',
     whiteSpace: 'nowrap' as const,
     pointerEvents: 'none' as const,
-    transform: 'translateZ(0)', // Force GPU acceleration
+    transform: 'translateZ(0)',
     maxWidth: `${DEFAULT_WIDTH}px`,
     transition: 'all 0.1s ease-out',
   };
 
+  const content = simplifyText(tooltipText);
+  const shouldColorCode = content.includes('▲') || content.includes('▼');
+
   return createPortal(
     <div style={tooltipStyles}>
-      {simplifyText(tooltipText)}
+      {shouldColorCode ? getColoredText(content) : content}
     </div>,
     document.body
   );

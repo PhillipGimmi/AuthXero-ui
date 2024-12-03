@@ -39,9 +39,9 @@ const GraphTooltip: React.FC<TooltipProps> = ({
   const calculateChange = (current: number, previous: number): {
     symbol: "▲" | "▼" | "→";
     value: string;
-    colorClass: string;
+    color: string;
   } => {
-    if (previous === 0) return { symbol: "→", value: "0", colorClass: "text-white" };
+    if (previous === 0) return { symbol: "→", value: "0", color: "#9CA3AF" };
 
     const change = ((current - previous) / previous) * 100;
     
@@ -49,20 +49,20 @@ const GraphTooltip: React.FC<TooltipProps> = ({
       return {
         symbol: "▲",
         value: Math.abs(change).toFixed(1),
-        colorClass: "text-green-400"
+        color: "#4ADE80" // Green-400 equivalent
       };
     }
     if (change < 0) {
       return {
         symbol: "▼",
         value: Math.abs(change).toFixed(1),
-        colorClass: "text-red-400"
+        color: "#F87171" // Red-400 equivalent
       };
     }
     return {
       symbol: "→",
       value: "0",
-      colorClass: "text-white"
+      color: "#9CA3AF"
     };
   };
 
@@ -81,7 +81,7 @@ const GraphTooltip: React.FC<TooltipProps> = ({
       </div>
       <div className="flex items-center justify-between mt-2">
         <div className="text-sm text-gray-400 capitalize">{hoveredKey}</div>
-        <div className={`text-sm font-medium ${change.colorClass} flex items-center gap-1`}>
+        <div className="text-sm font-medium flex items-center gap-1" style={{ color: change.color }}>
           <span>{change.symbol}</span>
           <span>{change.value}%</span>
         </div>
