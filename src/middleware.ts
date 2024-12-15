@@ -45,7 +45,7 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Request-ID', requestId);
   addHeaders(response, securityHeaders);
 
-  if (pathname.startsWith('/api/') || pathname.startsWith('/api/v1/auth/')) {
+  if (pathname.startsWith('/api/')) {
     addHeaders(response, corsHeaders);
   }
 
@@ -62,7 +62,6 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/api/:path*',
-    '/api/v1/auth/:path*',
     '/((?!_next|favicon.ico|public|assets|images).*)',
   ],
 };

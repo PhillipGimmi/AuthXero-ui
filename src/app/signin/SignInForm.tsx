@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -13,44 +13,35 @@ interface SignInFormProps {
 }
 
 const formVariants = {
-  initial: {
-    opacity: 0,
-  },
+  initial: { opacity: 0 },
   animate: {
     opacity: 1,
     transition: {
       duration: 0.3,
-      when: "beforeChildren",
+      when: 'beforeChildren',
       staggerChildren: 0.1,
       delayChildren: 0.2,
-    }
-  }
+    },
+  },
 };
 
 const containerVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-  },
+  initial: { opacity: 0, y: 20 },
   animate: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.5,
       ease: [0.25, 0.1, 0.25, 1],
-      when: "beforeChildren",
+      when: 'beforeChildren',
       staggerChildren: 0.1,
       delayChildren: 0.3,
-    }
-  }
+    },
+  },
 };
 
 const inputVariants = {
-  initial: {
-    opacity: 0,
-    x: -20,
-    y: 20,
-  },
+  initial: { opacity: 0, x: -20, y: 20 },
   animate: {
     opacity: 1,
     x: 0,
@@ -58,70 +49,77 @@ const inputVariants = {
     transition: {
       duration: 0.5,
       ease: [0.25, 0.1, 0.25, 1],
-    }
-  }
+    },
+  },
 };
 
 const buttonContainerVariants = {
-  initial: {
-    opacity: 0,
-  },
+  initial: { opacity: 0 },
   animate: {
     opacity: 1,
     transition: {
       duration: 0.5,
-      delay: 0.8, // Delay after inputs
-      when: "beforeChildren",
+      delay: 0.8,
+      when: 'beforeChildren',
       staggerChildren: 0.1,
-    }
-  }
+    },
+  },
 };
 
 const buttonVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-  },
+  initial: { opacity: 0, y: 20 },
   animate: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.5,
       ease: [0.25, 0.1, 0.25, 1],
-    }
-  }
+    },
+  },
 };
 
 const textVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-  },
+  initial: { opacity: 0, y: 20 },
   animate: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.5,
       ease: [0.25, 0.1, 0.25, 1],
-      delay: 1.2, // Delay after button
-    }
-  }
+      delay: 1.2,
+    },
+  },
 };
 
 const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [verificationCode, setVerificationCode] = useState<string>('');
-  const [showVerificationField, setShowVerificationField] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [formState, setFormState] = useState({
+    email: '',
+    password: '',
+    name: '',
+    confirmPassword: '',
+    verificationCode: '',
+    showVerificationField: false,
+    error: '',
+    isLoading: false,
+    touched: {
+      email: false,
+      password: false,
+      name: false,
+      confirmPassword: false,
+    },
+  });
 
   const router = useRouter();
   const { login, signup, verifyEmail } = useAuth();
 
-  const validateEmail = (email: string): ValidationResult => {
+  useEffect(() => {
+    console.log('Form mounted with mode:', mode);
+    return () => {
+      console.log('Form unmounting, cleaning up');
+    };
+  }, [mode]);
+
+  const validateEmail = useCallback((email: string): ValidationResult => {
     if (!email) {
       return { isValid: false, error: 'Please enter your email.' };
     }
@@ -131,9 +129,9 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       isValid,
       error: isValid ? undefined : 'Please enter a valid email address.',
     };
-  };
+  }, []);
 
-  const validatePassword = (password: string, isSignup: boolean): ValidationResult => {
+  const validatePassword = useCallback((password: string, isSignup: boolean): ValidationResult => {
     if (!password) {
       return { isValid: false, error: 'Please enter your password.' };
     }
@@ -141,110 +139,145 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       return { isValid: false, error: 'Password must be at least 8 characters long.' };
     }
     return { isValid: true };
-  };
+  }, []);
 
-  const validateConfirmPassword = (password: string, confirmPassword: string): ValidationResult => {
-    if (password !== confirmPassword) {
-      return { isValid: false, error: 'Passwords do not match.' };
-    }
-    return { isValid: true };
-  };
+  const validateConfirmPassword = useCallback(
+    (password: string, confirmPassword: string): ValidationResult => {
+      if (password !== confirmPassword) {
+        return { isValid: false, error: 'Passwords do not match.' };
+      }
+      return { isValid: true };
+    },
+    []
+  );
 
   const validateForm = useCallback(() => {
-    const emailValidation = validateEmail(email);
+    const emailValidation = validateEmail(formState.email);
     if (!emailValidation.isValid) {
-      throw new Error(emailValidation.error as string);
+      throw new Error(emailValidation.error ?? '');
     }
 
-    const passwordValidation = validatePassword(password, mode === 'signup');
+    const passwordValidation = validatePassword(formState.password, mode === 'signup');
     if (!passwordValidation.isValid) {
-      throw new Error(passwordValidation.error as string);
+      throw new Error(passwordValidation.error ?? '');
     }
 
     if (mode === 'signup') {
-      if (!name.trim()) {
+      if (!formState.name.trim()) {
         throw new Error('Name is required');
       }
-      
-      const confirmPasswordValidation = validateConfirmPassword(password, confirmPassword);
+      const confirmPasswordValidation = validateConfirmPassword(
+        formState.password,
+        formState.confirmPassword
+      );
       if (!confirmPasswordValidation.isValid) {
-        throw new Error(confirmPasswordValidation.error as string);
+        throw new Error(confirmPasswordValidation.error ?? '');
       }
     }
-  }, [email, password, confirmPassword, name, mode]);
+  }, [formState, mode, validateEmail, validatePassword, validateConfirmPassword]);
 
   const handleAuthentication = async (): Promise<AuthResponse> => {
     if (mode === 'signin') {
       const loginPayload: AuthCredentials = {
-        email,
-        password
+        email: formState.email,
+        password: formState.password,
       };
       return await login(loginPayload);
     }
 
     const signupPayload: SignUpCredentials = {
-      name,
-      email,
-      password,
-      confirmPassword
+      name: formState.name,
+      email: formState.email,
+      password: formState.password,
+      confirmPassword: formState.confirmPassword,
     };
     return await signup(signupPayload);
   };
 
   const handleVerifyCode = async (): Promise<void> => {
     try {
-      setIsLoading(true);
-      const response = await verifyEmail(verificationCode);
+      setFormState((prev) => ({ ...prev, isLoading: true }));
+      const response = await verifyEmail(formState.verificationCode);
 
       if (response.success) {
         router.push('/dashboard');
       } else {
-        setError(response.error ?? 'Verification failed.');
+        setFormState((prev) => ({
+          ...prev,
+          error: response.error ?? 'Verification failed.',
+        }));
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during verification.');
     } finally {
-      setIsLoading(false);
+      setFormState((prev) => ({ ...prev, isLoading: false }));
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setFormState((prev) => {
+      const updatedState = {
+        ...prev,
+        [name]: value,
+        touched: { ...prev.touched, [name]: true },
+      };
+
+      if (name === 'email') {
+        const emailValidation = validateEmail(value);
+        updatedState.error = emailValidation.isValid ? '' : emailValidation.error ?? '';
+      }
+      if (name === 'password') {
+        const passwordValidation = validatePassword(value, mode === 'signup');
+        updatedState.error = passwordValidation.isValid ? '' : passwordValidation.error ?? '';
+      }
+      if (name === 'confirmPassword') {
+        const confirmPasswordValidation = validateConfirmPassword(
+          prev.password,
+          value
+        );
+        updatedState.error = confirmPasswordValidation.isValid
+          ? ''
+          : confirmPasswordValidation.error ?? '';
+      }
+
+      return updatedState;
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    
-    try {
-      setError('');
-      setIsLoading(true);
 
-      if (showVerificationField) {
+    try {
+      setFormState((prev) => ({ ...prev, error: '', isLoading: true }));
+
+      if (formState.showVerificationField) {
         await handleVerifyCode();
       } else {
         validateForm();
         const response = await handleAuthentication();
 
         if (!response.success) {
-          throw new Error(response.error ?? 'Authentication failed');
+          setFormState((prev) => ({
+            ...prev,
+            error: response.error ?? 'Authentication failed. Please try again.',
+          }));
+          return;
         }
 
         if (response.requiresVerification) {
-          setShowVerificationField(true);
+          setFormState((prev) => ({ ...prev, showVerificationField: true }));
         } else {
           router.push('/dashboard');
         }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
-      setIsLoading(false);
+      setFormState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
   const getButtonText = (): string => {
-    if (isLoading) {
-      return 'Processing...';
-    }
-    if (showVerificationField) {
-      return 'Verify Code';
-    }
+    if (formState.isLoading) return 'Processing...';
+    if (formState.showVerificationField) return 'Verify Code';
     return mode === 'signin' ? 'Sign in' : 'Create account';
   };
 
@@ -257,7 +290,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       className="space-y-4"
     >
       <AnimatePresence mode="wait">
-        {error && (
+        {formState.error && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -265,12 +298,12 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
             transition={{ duration: 0.3 }}
             className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4"
           >
-            <p className="text-red-500 text-sm">{error}</p>
+            <p className="text-red-500 text-sm">{formState.error}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {!showVerificationField && (
+      {!formState.showVerificationField && (
         <motion.div
           variants={containerVariants}
           initial="initial"
@@ -279,47 +312,56 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
         >
           {mode === 'signup' && (
             <motion.div variants={inputVariants} className="mb-3">
-              <label htmlFor="name-input" className="mb-1.5 block text-zinc-400">Name</label>
+              <label htmlFor="name" className="mb-1.5 block text-zinc-400">
+                Name
+              </label>
               <input
-                id="name-input"
+                id="name"
+                name="name"
                 type="text"
                 placeholder="Your full name"
                 className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
-                value={name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                value={formState.name}
+                onChange={handleInputChange}
                 autoComplete="name"
-                disabled={isLoading}
+                disabled={formState.isLoading}
                 required
               />
             </motion.div>
           )}
 
           <motion.div variants={inputVariants} className="mb-3">
-            <label htmlFor="email-input" className="mb-1.5 block text-zinc-400">Email</label>
+            <label htmlFor="email" className="mb-1.5 block text-zinc-400">
+              Email
+            </label>
             <input
-              id="email-input"
+              id="email"
+              name="email"
               type="email"
               placeholder="your.email@example.com"
               className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              value={formState.email}
+              onChange={handleInputChange}
               autoComplete={mode === 'signup' ? 'username' : 'email'}
-              disabled={isLoading}
+              disabled={formState.isLoading}
               required
             />
           </motion.div>
 
           <motion.div variants={inputVariants} className="mb-6">
-            <label htmlFor="password-input" className="mb-1.5 block text-zinc-400">Password</label>
+            <label htmlFor="password" className="mb-1.5 block text-zinc-400">
+              Password
+            </label>
             <input
-              id="password-input"
+              id="password"
+              name="password"
               type="password"
               placeholder="••••••••••••"
               className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              value={formState.password}
+              onChange={handleInputChange}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-              disabled={isLoading}
+              disabled={formState.isLoading}
               required
               minLength={8}
             />
@@ -327,18 +369,19 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
 
           {mode === 'signup' && (
             <motion.div variants={inputVariants} className="mb-6">
-              <label htmlFor="confirm-password-input" className="mb-1.5 block text-zinc-400">
+              <label htmlFor="confirmPassword" className="mb-1.5 block text-zinc-400">
                 Confirm Password
               </label>
               <input
-                id="confirm-password-input"
+                id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 placeholder="••••••••••••"
                 className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
-                value={confirmPassword}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                value={formState.confirmPassword}
+                onChange={handleInputChange}
                 autoComplete="new-password"
-                disabled={isLoading}
+                disabled={formState.isLoading}
                 required
                 minLength={8}
               />
@@ -347,50 +390,47 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
         </motion.div>
       )}
 
-      {showVerificationField && (
+      {formState.showVerificationField && (
         <motion.div
           variants={inputVariants}
           initial="initial"
           animate="animate"
           className="mb-6"
         >
-          <label htmlFor="verification-code-input" className="mb-1.5 block text-zinc-400">
+          <label htmlFor="verificationCode" className="mb-1.5 block text-zinc-400">
             Verification Code
           </label>
           <input
-            id="verification-code-input"
+            id="verificationCode"
+            name="verificationCode"
             type="text"
             placeholder="Enter your code"
             className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
-            value={verificationCode}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVerificationCode(e.target.value)}
+            value={formState.verificationCode}
+            onChange={handleInputChange}
             autoComplete="one-time-code"
-            disabled={isLoading}
+            disabled={formState.isLoading}
             required
           />
         </motion.div>
       )}
 
-      <motion.div
-        variants={buttonContainerVariants}
-        initial="initial"
-        animate="animate"
-      >
+      <motion.div variants={buttonContainerVariants} initial="initial" animate="animate">
         <motion.div variants={buttonVariants}>
           <div className="mb-[-10px]">
-          <ShimmerButton
-            href="#"
-            text={getButtonText()}
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.preventDefault();
-              handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
-            }}
-          />
+            <ShimmerButton
+              href="#"
+              text={getButtonText()}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+              }}
+            />
           </div>
         </motion.div>
       </motion.div>
 
-      <motion.p 
+      <motion.p
         variants={textVariants}
         initial="initial"
         animate="animate"

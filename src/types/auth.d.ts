@@ -4,6 +4,7 @@ export interface AuthXeroUser {
   name: string;
   role: string;
   active: boolean;
+  isConfigured: boolean;
   email_verified: boolean;
   created_at: string;
   updated_at: string;

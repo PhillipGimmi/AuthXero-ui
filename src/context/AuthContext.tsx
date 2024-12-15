@@ -20,9 +20,9 @@ import LoadingOverlay from '@/components/FullScreenLoader';
 const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_AUTHXERO_URL ?? 'http://localhost:8080',
   ENDPOINTS: {
-    VERIFY_EMAIL: '/api/v1/auth/verify-email',
-    REFRESH_TOKEN: '/api/v1/auth/refresh-token',
-    LOGOUT: '/api/v1/auth/logout'
+    VERIFY_EMAIL: '/api/auth/verify-email',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    LOGOUT: '/api/auth/logout'
   }
 } as const;
 
@@ -216,18 +216,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ...response.user,
         email_verified: response.user.email_verified
       };
-  
+      
       if (!normalizedUser.email_verified) {
-        const returnTo = searchParams.get('returnTo');
-        router.push(returnTo ? `/verify-email?returnTo=${returnTo}` : '/verify-email');
+        tokenManager.setTokens(response.token, response.refreshToken);
+        setAuthState(prev => ({
+          ...prev,
+          user: normalizedUser,
+          isVerified: false,
+        }));
+
         return {
-          success: false,
-          error: 'Please verify your email',
+          success: true,
           requiresVerification: true,
           email: credentials.email,
+          token: response.token,
+          refreshToken: response.refreshToken,
+          user: normalizedUser
         };
       }
       
+      // Only set tokens and redirect if verified
       tokenManager.setTokens(response.token, response.refreshToken);
       setAuthState(prev => ({
         ...prev,
@@ -250,7 +258,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setAuthState(prev => ({ ...prev, loading: false }));
     }
-  }, [client, clearError, tokenManager, router, searchParams, handleError]);
+}, [client, clearError, tokenManager, router, searchParams, handleError]);
 
   const signup = useCallback(async (credentials: SignUpCredentials): Promise<AuthResponse> => {
     try {

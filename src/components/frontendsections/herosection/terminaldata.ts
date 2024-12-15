@@ -328,10 +328,7 @@ export interface Command {
   Released: March 2024
   Build: 2024.03.15.1
   
-  API Versions:
-  • v2 (Current)
-  • v1 (Deprecated)
-  
+
   SDK Versions:
   • Node.js: 2.4.0
   • Python: 2.4.0
@@ -341,7 +338,6 @@ export interface Command {
   • PHP: 2.4.0
   
   Compatibility:
-  • API: v1, v2
   • OAuth: 2.0
   • OIDC: 1.0
   • SAML: 2.0`
