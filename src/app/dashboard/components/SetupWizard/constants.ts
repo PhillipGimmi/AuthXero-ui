@@ -22,7 +22,7 @@ import {
       id: 'spa',
       title: 'Single Page App',
       icon: Monitor,
-      description: 'Perfect for React, Vue, or Angular applications'
+      description: 'Perfect for React, Vue, or Angular'
     },
     {
       id: 'website',

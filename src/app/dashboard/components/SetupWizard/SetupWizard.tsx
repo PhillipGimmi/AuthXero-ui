@@ -1,75 +1,63 @@
-import React, { useState, useCallback } from 'react';
-import { SetupWizardProps, SetupOption, MousePosition } from './types';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft } from 'lucide-react';
+import { DomainStep } from './steps/DomainStep';
+import { PlatformStep } from './steps/PlatformStep';
+import { SetupStep } from './steps/SetupStep';
+import { ProgressBar } from './ProgressBar';
 import { SETUP_OPTIONS } from './constants';
-import { extractDomain, getCodeSnippet } from './utils';
-import { Header } from './Header';
-import { SetupOptionCard } from './SetupOptionCard';
-import { CodePreview } from './CodePreview';
-import { CompleteButton } from './CompleteButton';
-import { DomainInput } from './DomainInput';
+import { SetupOption, MousePosition } from './types';
 
-const SetupWizard: React.FC<SetupWizardProps> = ({ userEmail, onComplete }) => {
-  const [domain, setDomain] = useState(() => extractDomain(userEmail));
+interface AuthWizardProps {
+  readonly onComplete: () => void;
+}
+
+export default function AuthWizard({ onComplete }: AuthWizardProps) {
+  const [step, setStep] = useState<number>(1);
+  const [domain, setDomain] = useState<string>('');
   const [selectedOption, setSelectedOption] = useState<SetupOption['id'] | null>(null);
   const [mousePositions, setMousePositions] = useState<Record<string, MousePosition>>({});
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleMouseMove = useCallback((optionId: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePositions(prev => ({
-      ...prev,
-      [optionId]: {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      }
-    }));
-  }, []);
-
-  const handleTouchMove = useCallback((optionId: string, e: React.TouchEvent<HTMLButtonElement>) => {
-    const touch = e.touches[0];
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePositions(prev => ({
-      ...prev,
-      [optionId]: {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      }
-    }));
-  }, []);
-
-  const handleMouseLeave = useCallback((optionId: string) => {
-    setMousePositions(prev => {
-      const newPositions = { ...prev };
-      delete newPositions[optionId];
-      return newPositions;
-    });
-  }, []);
-
-  const handleCopyCode = async () => {
-    if (!selectedOption) return;
-    try {
-      const { code } = getCodeSnippet(selectedOption, domain);
-      await navigator.clipboard.writeText(code);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
+  const handleBack = () => {
+    setStep(step - 1);
+    if (step === 3) {
+      setSelectedOption(null);
     }
   };
 
-  const handleComplete = async () => {
+  const getBackText = () => {
+    if (step === 2) return domain; // Return domain when on PlatformStep
+    if (step === 3 && selectedOption) {
+      const option = SETUP_OPTIONS.find(opt => opt.id === selectedOption);
+      return option?.title ?? '';
+    }
+    return '';
+  };
+
+  const handleProceedToPlatform = (validatedDomain: string) => {
+    setDomain(validatedDomain);
+    setStep(2);
+  };
+  
+
+  const handlePlatformSelect = (optionId: SetupOption['id']) => {
+    setSelectedOption(optionId);
+    setStep(3);
+  };
+
+  const handleSetupComplete = async () => {
     if (!selectedOption || !domain) return;
-    setIsGenerating(true);
+    setIsSubmitting(true);
 
     try {
-      const { defaults } = getCodeSnippet(selectedOption, domain);
-      
-      // Save configuration
       const response = await fetch('/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           domain,
           platform: selectedOption,
-          config: defaults
+          timestamp: new Date().toISOString()
         })
       });
 
@@ -77,68 +65,71 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ userEmail, onComplete }) => {
         throw new Error('Failed to save configuration');
       }
 
-      // Generate minimal config file
-      const configContent = `AUTHXERO_DOMAIN=${domain}\n# Secure defaults auto-configured`;
+      const configContent = `DOMAIN=${domain}\nPLATFORM=${selectedOption}\n`;
       const blob = new Blob([configContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = '.env.authxero';
+      a.download = '.env.auth';
       a.click();
       URL.revokeObjectURL(url);
 
       onComplete();
     } catch (err) {
       console.error('Setup failed:', err);
-      // Here you might want to show an error message to the user
     } finally {
-      setIsGenerating(false);
+      setIsSubmitting(false);
     }
   };
 
-  const codeSnippet = selectedOption ? getCodeSnippet(selectedOption, domain).code : '';
-
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <Header />
-        
-        <DomainInput 
-          domain={domain}
-          onChange={setDomain}
-        />
+    <div className="fixed inset-0 bg-zinc-950 text-zinc-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-4xl relative">
+      {step > 1 && (
+  <motion.button
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    onClick={handleBack}
+    className="absolute top-0 left-0 flex items-center space-x-2 text-zinc-400 hover:text-white transition-colors"
+  >
+    <ChevronLeft className="w-5 h-5" />
+    <span className="text-white truncate max-w-[200px]">{getBackText()}</span>
+  </motion.button>
+)}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {SETUP_OPTIONS.map((option) => (
-            <SetupOptionCard
-              key={option.id}
-              option={option}
-              isSelected={selectedOption === option.id}
-              onSelect={() => setSelectedOption(option.id)}
-              mousePosition={mousePositions[option.id]}
-              onMouseMove={(e) => handleMouseMove(option.id, e)}
-              onTouchMove={(e) => handleTouchMove(option.id, e)}
-              onMouseLeave={() => handleMouseLeave(option.id)}
+
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <DomainStep 
+              initialValue={''}
+              onProceed={handleProceedToPlatform} 
             />
-          ))}
-        </div>
+          )}
 
-        {selectedOption && (
-          <CodePreview 
-            code={codeSnippet}
-            onCopy={handleCopyCode}
-          />
-        )}
+{step === 2 && (
+  <PlatformStep
+    mousePositions={mousePositions}
+    setMousePositions={setMousePositions}
+    selectedOption={selectedOption}
+    onSelect={handlePlatformSelect}
+    onBack={handleBack}
+    previousDomain={domain} // Pass domain to PlatformStep
+  />
+)}
 
-        {selectedOption && (
-          <CompleteButton
-            onClick={handleComplete}
-            isGenerating={isGenerating}
-          />
-        )}
+
+          {step === 3 && selectedOption && (
+            <SetupStep
+              domain={domain}
+              selectedPlatform={selectedOption}
+              onComplete={handleSetupComplete}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </AnimatePresence>
+
+        <ProgressBar currentStep={step} totalSteps={3} />
       </div>
     </div>
   );
-};
-
-export default SetupWizard;
+}

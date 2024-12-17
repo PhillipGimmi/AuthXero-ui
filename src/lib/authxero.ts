@@ -148,6 +148,13 @@ export class AuthXeroClient {
   async login(credentials: AuthCredentials): Promise<AuthXeroLoginResponse> {
     this.requestLogger.group('Login attempt');
     try {
+      // Log the login attempt
+      this.requestLogger.info('Attempting login', { 
+        email: credentials.email,
+        timestamp: new Date().toISOString()
+      });
+  
+      // Make the request
       const response = await this.makeRequest<AuthXeroLoginResponse>(ENDPOINTS.LOGIN, {
         method: 'POST',
         body: JSON.stringify({
@@ -155,30 +162,76 @@ export class AuthXeroClient {
           password: credentials.password
         })
       });
-
-      this.requestLogger.info('Login successful', {
-        userId: response.user?.id,
-        emailVerified: response.user?.email_verified
-      });
-
-      return {
+  
+      // Validate response
+      if (!response.user || !response.token || !response.refreshToken) {
+        this.requestLogger.error('Invalid server response', { 
+          hasUser: !!response.user,
+          hasToken: !!response.token,
+          hasRefreshToken: !!response.refreshToken
+        });
+        throw new AuthXeroError(
+          'Invalid response from server',
+          500,
+          'INVALID_RESPONSE'
+        );
+      }
+  
+      // Normalize the response
+      const normalizedResponse = {
         ...response,
         user: {
           ...response.user,
-          email_verified: response.user.email_verified ?? false
-        }
+          // Explicitly handle verification status
+          // undefined or null should be treated as verified for existing users
+          email_verified: response.user.email_verified !== false
+        },
+        requiresVerification: response.user.email_verified === false
       };
+  
+      // Log successful login
+      this.requestLogger.info('Login successful', {
+        userId: normalizedResponse.user.id,
+        emailVerified: normalizedResponse.user.email_verified,
+        requiresVerification: normalizedResponse.requiresVerification,
+        timestamp: new Date().toISOString()
+      });
+  
+      return normalizedResponse;
+  
     } catch (error) {
+      // Enhanced error logging
+      this.requestLogger.error('Login error', {
+        type: error instanceof AuthXeroError ? 'AuthXeroError' : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+  
       if (error instanceof AuthXeroError) {
         if (error.isUnauthorized()) {
-          throw new AuthXeroError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+          throw new AuthXeroError(
+            'Invalid email or password',
+            401,
+            'INVALID_CREDENTIALS'
+          );
         }
         if (error.isForbidden()) {
-          throw new AuthXeroError('Email verification required', 403, 'EMAIL_NOT_VERIFIED');
+          throw new AuthXeroError(
+            'Email verification required',
+            403,
+            'EMAIL_NOT_VERIFIED'
+          );
         }
         throw error;
       }
-      throw new AuthXeroError('Login failed', 500, 'LOGIN_ERROR');
+  
+      throw new AuthXeroError(
+        'Login failed',
+        500,
+        'LOGIN_ERROR'
+      );
+  
     } finally {
       this.requestLogger.groupEnd();
     }

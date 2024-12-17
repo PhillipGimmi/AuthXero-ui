@@ -1,4 +1,3 @@
-// tailwind.config.ts
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
@@ -9,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'noto-sans-jp': ['var(--font-noto-sans-jp)'],
+      },
       colors: {
         // Theme Colors
         primary: {
@@ -70,6 +72,7 @@ const config: Config = {
         spin: 'spin 3s linear infinite',
         wipe: 'wipe 1.5s linear infinite',
         shimmer: 'shimmer 2s linear infinite',
+        glow: 'glow 2s ease-in-out infinite alternate',
       },
       keyframes: {
         'meteor-animation': {
@@ -101,6 +104,14 @@ const config: Config = {
         shimmer: {
           '0%': { backgroundPosition: '200% center' },
           '100%': { backgroundPosition: '-200% center' },
+        },
+        glow: {
+          '0%': {
+            textShadow: '0 0 4px rgba(255,255,255,0.1), 0 0 8px rgba(255,255,255,0.2)',
+          },
+          '100%': {
+            textShadow: '0 0 8px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.5)',
+          },
         },
       },
     },

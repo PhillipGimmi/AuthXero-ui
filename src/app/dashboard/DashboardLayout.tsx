@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import type { AuthContextType } from '@/types/auth';
+import DashAuthLogo from '@/components/DashAuthLogo';
 
 type Plan = 'pro' | 'enterprise';
 
@@ -479,28 +480,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           className="fixed top-0 right-0 left-0 h-16 bg-zinc-900/50 backdrop-blur-xl border-b border-zinc-800 z-50"
         >
           <div className="flex items-center justify-between h-full px-4">
-            <div className="flex items-center gap-4">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsSidebarOpen(prev => !prev)}
-                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                <motion.div
-                  variants={variants.rotate}
-                  initial={false}
-                  animate={isSidebarOpen ? "open" : "closed"}
-                >
-                  {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-                </motion.div>
-              </motion.button>
-              <motion.span 
-                className="text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent"
-                whileHover={{ scale: 1.02 }}
-              >
-                AuthXero
-              </motion.span>
-            </div>
+          <div className="flex items-center gap-4">
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsSidebarOpen(prev => !prev)}
+        className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+      >
+        <motion.div
+          variants={variants.rotate}
+          initial={false}
+          animate={isSidebarOpen ? "open" : "closed"}
+        >
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </motion.div>
+      </motion.button>
+      <DashAuthLogo />
+    </div>
             
             <div className="flex items-center gap-4">
               <motion.button

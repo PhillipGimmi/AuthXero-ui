@@ -39,8 +39,6 @@ const TOKEN_CONFIG = {
   }
 } as const;
 
-const ANIMATION_DURATION = 100;
-
 interface AuthContextType {
   user: AuthXeroUser | null;
   loading: boolean;
@@ -214,51 +212,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
   
       const normalizedUser = {
         ...response.user,
-        email_verified: response.user.email_verified
+        email_verified: response.user.email_verified ?? false // Ensure we have a boolean
       };
       
-      if (!normalizedUser.email_verified) {
-        tokenManager.setTokens(response.token, response.refreshToken);
-        setAuthState(prev => ({
-          ...prev,
-          user: normalizedUser,
-          isVerified: false,
-        }));
-
-        return {
-          success: true,
-          requiresVerification: true,
-          email: credentials.email,
-          token: response.token,
-          refreshToken: response.refreshToken,
-          user: normalizedUser
-        };
-      }
-      
-      // Only set tokens and redirect if verified
+      // Store tokens regardless of verification status
       tokenManager.setTokens(response.token, response.refreshToken);
+      
+      // Update auth state
       setAuthState(prev => ({
         ...prev,
         user: normalizedUser,
-        isVerified: normalizedUser.email_verified,
+        isVerified: normalizedUser.email_verified
       }));
-      
-      const returnTo = searchParams.get('returnTo');
-      router.push(returnTo ? decodeURIComponent(returnTo) : '/dashboard');
   
+      // If user is verified, redirect to dashboard
+      if (normalizedUser.email_verified) {
+        const returnTo = searchParams.get('returnTo');
+        router.push(returnTo ? decodeURIComponent(returnTo) : '/dashboard');
+        return {
+          success: true,
+          user: normalizedUser,
+          token: response.token,
+          refreshToken: response.refreshToken,
+        };
+      }
+  
+      // Only return verification required if user is not verified
       return {
         success: true,
-        user: normalizedUser,
+        requiresVerification: !normalizedUser.email_verified,
+        email: credentials.email,
         token: response.token,
         refreshToken: response.refreshToken,
+        user: normalizedUser
       };
+      
     } catch (err) {
       const error = handleError(err);
       return { success: false, error: error.message };
     } finally {
       setAuthState(prev => ({ ...prev, loading: false }));
     }
-}, [client, clearError, tokenManager, router, searchParams, handleError]);
+  }, [client, clearError, tokenManager, router, searchParams, handleError]);
 
   const signup = useCallback(async (credentials: SignUpCredentials): Promise<AuthResponse> => {
     try {
@@ -365,12 +360,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async (): Promise<void> => {
     try {
       setAuthState(prev => ({ ...prev, isLoggingOut: true }));
-      await new Promise(resolve => setTimeout(resolve, ANIMATION_DURATION));
+      
       await performLogout();
+      
+      // Clear loading state before navigation
+      setAuthState(prev => ({ 
+        ...prev, 
+        isLoggingOut: false,
+        user: null,
+        isVerified: false,
+        error: null
+      }));
+  
+      // Small delay to allow state update before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
       router.push('/signin?reason=logout');
     } catch (err) {
-      handleError(err);
       setAuthState(prev => ({ ...prev, isLoggingOut: false }));
+      handleError(err);
       throw err;
     }
   }, [performLogout, handleError, router]);

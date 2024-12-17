@@ -1,0 +1,256 @@
+
+auth_db=# \dt
+                    List of relations
+ Schema |            Name             | Type  |  Owner
+--------+-----------------------------+-------+----------
+ public | audit_logs                  | table | postgres
+ public | client_applications         | table | postgres
+ public | email_verification_attempts | table | postgres
+ public | password_reset_tokens       | table | postgres
+ public | rate_limits                 | table | postgres
+ public | sessions                    | table | postgres
+ public | users                       | table | postgres
+(7 rows)
+
+auth_db=# \d+ audit_logs
+                                                          Table "public.audit_logs"
+     Column     |           Type           | Collation | Nullable |      Default       | Storage  | Compression | Stats target | Description
+----------------+--------------------------+-----------+----------+--------------------+----------+-------------+--------------+-------------
+ id             | uuid                     |           | not null | uuid_generate_v4() | plain    |             |              |
+ timestamp      | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+ user_id        | uuid                     |           |          |                    | plain    |             |              |
+ client_app_id  | uuid                     |           |          |                    | plain    |             |              |
+ event_type     | text                     |           | not null |                    | extended |             |              |
+ ip_address     | inet                     |           |          |                    | main     |             |              |
+ user_agent     | text                     |           |          |                    | extended |             |              |
+ request_path   | text                     |           |          |                    | extended |             |              |
+ request_method | text                     |           |          |                    | extended |             |              |
+ status_code    | integer                  |           |          |                    | plain    |             |              |
+ error_message  | text                     |           |          |                    | extended |             |              |
+ metadata       | jsonb                    |           |          | '{}'::jsonb        | extended |             |              |
+ event_status   | text                     |           |          | 'active'::text     | extended |             |              |
+Indexes:
+    "audit_logs_pkey" PRIMARY KEY, btree (id)
+    "idx_audit_logs_client_app_id" btree (client_app_id)
+    "idx_audit_logs_event_status" btree (event_status)
+    "idx_audit_logs_event_type" btree (event_type)
+    "idx_audit_logs_timestamp" btree ("timestamp")
+    "idx_audit_logs_user_id" btree (user_id)
+Check constraints:
+    "audit_logs_event_status_check" CHECK (event_status = ANY (ARRAY['active'::text, 'archived'::text, 'user_deleted'::text]))
+    "audit_logs_event_type_check" CHECK (event_type = ANY (ARRAY['signup_success'::text, 'signup_failure'::text, 'login_success'::text, 'login_failure'::text, 'logout'::text, 'email_verification_success'::text, 'email_verification_failure'::text, 'password_reset_requested'::text, 'password_reset_success'::text, 'password_reset_failure'::text, 'client_app_created'::text, 'client_app_updated'::text, 'client_app_deleted'::text, 'user_updated'::text, 'user_deleted'::text]))
+Foreign-key constraints:
+    "audit_logs_client_app_id_fkey" FOREIGN KEY (client_app_id) REFERENCES client_applications(id) ON DELETE SET NULL
+    "audit_logs_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+Policies:
+    POLICY "audit_logs_insert_app" FOR INSERT
+      WITH CHECK (true)
+    POLICY "audit_logs_read_self"
+      USING ((((user_id = current_user_id()) OR (client_app_id IN ( SELECT client_applications.id
+   FROM client_applications
+  WHERE (client_applications.user_id = current_user_id())))) AND (event_status = 'active'::text)))
+Access method: heap
+
+auth_db=# \d+ client_applications
+                                                      Table "public.client_applications"
+     Column      |           Type           | Collation | Nullable |       Default       | Storage  | Compression | Stats target | Description
+-----------------+--------------------------+-----------+----------+---------------------+----------+-------------+--------------+-------------
+ id              | uuid                     |           | not null | uuid_generate_v4()  | plain    |             |              |
+ user_id         | uuid                     |           | not null |                     | plain    |             |              |
+ client_id       | text                     |           | not null |                     | extended |             |              |
+ client_secret   | text                     |           | not null |                     | extended |             |              |
+ platform_type   | text                     |           | not null |                     | extended |             |              |
+ domain          | text                     |           | not null |                     | extended |             |              |
+ app_name        | text                     |           | not null |                     | extended |             |              |
+ redirect_urls   | text[]                   |           | not null |                     | extended |             |              |
+ allowed_origins | text[]                   |           | not null |                     | extended |             |              |
+ status          | text                     |           | not null | 'active'::text      | extended |             |              |
+ environment     | text                     |           | not null | 'development'::text | extended |             |              |
+ created_at      | timestamp with time zone |           |          | CURRENT_TIMESTAMP   | plain    |             |              |
+ updated_at      | timestamp with time zone |           |          | CURRENT_TIMESTAMP   | plain    |             |              |
+ last_used_at    | timestamp with time zone |           |          |                     | plain    |             |              |
+ metadata        | jsonb                    |           |          | '{}'::jsonb         | extended |             |              |
+Indexes:
+    "client_applications_pkey" PRIMARY KEY, btree (id)
+    "client_applications_client_id_key" UNIQUE CONSTRAINT, btree (client_id)
+    "idx_client_applications_domain" btree (domain)
+    "idx_client_applications_user" btree (user_id)
+Check constraints:
+    "client_applications_environment_check" CHECK (environment = ANY (ARRAY['development'::text, 'production'::text]))
+    "client_applications_platform_type_check" CHECK (platform_type = ANY (ARRAY['spa'::text, 'website'::text, 'android'::text, 'ios'::text]))
+    "client_applications_status_check" CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text, 'suspended'::text]))Foreign-key constraints:
+    "client_applications_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Referenced by:
+    TABLE "audit_logs" CONSTRAINT "audit_logs_client_app_id_fkey" FOREIGN KEY (client_app_id) REFERENCES client_applications(id) ON DELETE SET NULL
+Policies:
+    POLICY "client_apps_crud_self"
+      USING ((user_id = current_user_id()))
+      WITH CHECK ((user_id = current_user_id()))
+Triggers:
+    set_timestamp_client_applications BEFORE UPDATE ON client_applications FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp()
+Access method: heap
+
+auth_db=# \d+ email_verification_attempts
+                                                   Table "public.email_verification_attempts"
+      Column       |           Type           | Collation | Nullable |      Default       | Storage  | Compression | Stats target | Description
+-------------------+--------------------------+-----------+----------+--------------------+----------+-------------+--------------+-------------
+ id                | uuid                     |           | not null | uuid_generate_v4() | plain    |             |              |
+ user_id           | uuid                     |           | not null |                    | plain    |             |              |
+ ip_address        | inet                     |           |          |                    | main     |             |              |
+ attempted_at      | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+ success           | boolean                  |           |          | false              | plain    |             |              |
+ verification_code | text                     |           | not null |                    | extended |             |              |
+ status            | text                     |           | not null | 'pending'::text    | extended |             |              |
+ attempts_count    | integer                  |           |          | 0                  | plain    |             |              |
+ expires_at        | timestamp with time zone |           | not null |                    | plain    |             |              |
+ created_at        | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+ metadata          | jsonb                    |           |          | '{}'::jsonb        | extended |             |              |
+Indexes:
+    "email_verification_attempts_pkey" PRIMARY KEY, btree (id)
+    "idx_unique_pending_verification" UNIQUE, btree (user_id, verification_code) WHERE status = 'pending'::text
+    "idx_verification_active_attempts" btree (user_id, status, attempts_count) WHERE status = 'pending'::text AND attempts_count < 5
+    "idx_verification_attempts_code" btree (verification_code)
+    "idx_verification_attempts_composite" btree (user_id, status, expires_at)
+    "idx_verification_attempts_status" btree (status)
+    "idx_verification_attempts_time" btree (attempted_at)
+    "idx_verification_attempts_user" btree (user_id)
+    "idx_verification_recent_pending" btree (user_id, status, expires_at) WHERE status = 'pending'::text
+Check constraints:
+    "email_verification_attempts_status_check" CHECK (status = ANY (ARRAY['pending'::text, 'completed'::text, 'expired'::text]))
+    "valid_attempts_count" CHECK (attempts_count >= 0 AND attempts_count <= 5)
+    "valid_status_transitions" CHECK (
+CASE
+    WHEN status = 'completed'::text THEN success = true
+    WHEN status = 'expired'::text THEN expires_at < CURRENT_TIMESTAMP
+    WHEN status = 'pending'::text THEN expires_at > CURRENT_TIMESTAMP
+    ELSE false
+END)
+Foreign-key constraints:
+    "email_verification_attempts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Policies:
+    POLICY "verification_attempts_insert" FOR INSERT
+      WITH CHECK (true)
+    POLICY "verification_attempts_select"
+      USING ((user_id = current_user_id()))
+Triggers:
+    cleanup_expired_verifications BEFORE INSERT OR UPDATE ON email_verification_attempts FOR EACH ROW EXECUTE FUNCTION cleanup_expired_verifications()
+    enforce_verification_status BEFORE INSERT OR UPDATE ON email_verification_attempts FOR EACH ROW EXECUTE FUNCTION enforce_verification_status()
+    validate_verification_attempt BEFORE INSERT OR UPDATE ON email_verification_attempts FOR EACH ROW EXECUTE FUNCTION validate_verification_attempt()
+Disabled user triggers:
+    trigger_periodic_cleanup AFTER INSERT ON email_verification_attempts FOR EACH STATEMENT EXECUTE FUNCTION periodic_cleanup()
+Access method: heap
+
+auth_db=# \d+ password_reset_tokens
+                                                  Table "public.password_reset_tokens"
+   Column   |           Type           | Collation | Nullable |      Default       | Storage  | Compression | Stats target | Description
+------------+--------------------------+-----------+----------+--------------------+----------+-------------+--------------+-------------
+ id         | uuid                     |           | not null | uuid_generate_v4() | plain    |             |              |
+ user_id    | uuid                     |           | not null |                    | plain    |             |              |
+ token      | text                     |           | not null |                    | extended |             |              |
+ expires_at | timestamp with time zone |           | not null |                    | plain    |             |              |
+ used_at    | timestamp with time zone |           |          |                    | plain    |             |              |
+ created_at | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+Indexes:
+    "password_reset_tokens_pkey" PRIMARY KEY, btree (id)
+    "password_reset_tokens_token_key" UNIQUE CONSTRAINT, btree (token)
+Foreign-key constraints:
+    "password_reset_tokens_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+auth_db=# \d+ rate_limits
+                                                          Table "public.rate_limits"
+     Column     |           Type           | Collation | Nullable |       Default        | Storage  | Compression | Stats target | Description
+----------------+--------------------------+-----------+----------+----------------------+----------+-------------+--------------+-------------
+ id             | uuid                     |           | not null | uuid_generate_v4()   | plain    |             |              |
+ target_type    | text                     |           | not null |                      | extended |             |              |
+ target_id      | text                     |           | not null |                      | extended |             |              |
+ endpoint       | text                     |           | not null |                      | extended |             |              |
+ requests_count | integer                  |           |          | 0                    | plain    |             |              |
+ window_start   | timestamp with time zone |           |          | CURRENT_TIMESTAMP    | plain    |             |              |
+ window_size    | interval                 |           |          | '01:00:00'::interval | plain    |             |              |
+ max_requests   | integer                  |           |          | 1000                 | plain    |             |              |
+Indexes:
+    "rate_limits_pkey" PRIMARY KEY, btree (id)
+    "idx_rate_limits_target" btree (target_type, target_id)
+    "rate_limits_target_type_target_id_endpoint_key" UNIQUE CONSTRAINT, btree (target_type, target_id, endpoint)
+Check constraints:
+    "rate_limits_target_type_check" CHECK (target_type = ANY (ARRAY['ip'::text, 'user'::text, 'client_app'::text]))
+Policies:
+    POLICY "rate_limits_read_self"
+      USING (((target_type = 'user'::text) AND ((target_id)::uuid = current_user_id())))
+    POLICY "rate_limits_system"
+      TO postgres
+      USING (true)
+Access method: heap
+
+auth_db=# \d+ sessions
+                                                          Table "public.sessions"
+    Column     |           Type           | Collation | Nullable |      Default       | Storage  | Compression | Stats target | Description
+---------------+--------------------------+-----------+----------+--------------------+----------+-------------+--------------+-------------
+ id            | uuid                     |           | not null | uuid_generate_v4() | plain    |             |              |
+ user_id       | uuid                     |           | not null |                    | plain    |             |              |
+ token         | text                     |           | not null |                    | extended |             |              |
+ expires_at    | timestamp with time zone |           | not null |                    | plain    |             |              |
+ created_at    | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+ last_used_at  | timestamp with time zone |           |          | CURRENT_TIMESTAMP  | plain    |             |              |
+ refresh_token | text                     |           |          |                    | extended |             |              |
+ ip_address    | inet                     |           |          |                    | main     |             |              |
+ user_agent    | text                     |           |          |                    | extended |             |              |
+Indexes:
+    "sessions_pkey" PRIMARY KEY, btree (id)
+    "idx_sessions_last_used" btree (last_used_at)
+    "idx_sessions_token" btree (token)
+    "sessions_token_key" UNIQUE CONSTRAINT, btree (token)
+Foreign-key constraints:
+    "sessions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Policies:
+    POLICY "sessions_crud_self"
+      USING ((user_id = current_user_id()))
+      WITH CHECK ((user_id = current_user_id()))
+Triggers:
+    update_session_last_used_timestamp BEFORE UPDATE ON sessions FOR EACH ROW EXECUTE FUNCTION update_session_last_used()
+Access method: heap
+
+auth_db=# \d+ users
+                                                                Table "public.users"
+     Column     |           Type           | Collation | Nullable |          Default          | Storage  | Compression | Stats target | Description
+----------------+--------------------------+-----------+----------+---------------------------+----------+-------------+--------------+-------------
+ id             | uuid                     |           | not null | uuid_generate_v4()        | plain    |             |              |
+ email          | character varying(255)   |           | not null |                           | extended |             |              |
+ password_hash  | character varying(255)   |           | not null |                           | extended |             |              |
+ name           | character varying(100)   |           | not null |                           | extended |             |              |
+ role           | character varying(50)    |           |          | 'user'::character varying | extended |             |              |
+ active         | boolean                  |           |          | true                      | plain    |             |              |
+ created_at     | timestamp with time zone |           |          | CURRENT_TIMESTAMP         | plain    |             |              |
+ updated_at     | timestamp with time zone |           |          | CURRENT_TIMESTAMP         | plain    |             |              |
+ email_verified | boolean                  |           |          | false                     | plain    |             |              |
+ last_login_at  | timestamp with time zone |           |          |                           | plain    |             |              |
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "idx_users_email" btree (email)
+    "idx_users_email_verified" btree (email_verified)
+    "idx_users_last_login" btree (last_login_at)
+    "users_email_key" UNIQUE CONSTRAINT, btree (email)
+Referenced by:
+    TABLE "audit_logs" CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    TABLE "client_applications" CONSTRAINT "client_applications_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "email_verification_attempts" CONSTRAINT "email_verification_attempts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "password_reset_tokens" CONSTRAINT "password_reset_tokens_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "sessions" CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Policies:
+    POLICY "users_insert_public" FOR INSERT
+      WITH CHECK (true)
+    POLICY "users_read_self" FOR SELECT
+      USING (((id = current_user_id()) OR (current_user_id() IS NULL) OR (CURRENT_USER = 'postgres'::name)))
+    POLICY "users_select_self" FOR SELECT
+      USING (((id = current_user_id()) OR (current_user_id() IS NULL) OR (CURRENT_USER = 'postgres'::name)))
+    POLICY "users_update_self" FOR UPDATE
+      USING ((id = current_user_id()))
+      WITH CHECK ((id = current_user_id()))
+Triggers:
+    update_last_login BEFORE UPDATE OF last_login_at ON users FOR EACH ROW EXECUTE FUNCTION update_user_last_login()
+Disabled user triggers:
+    email_validation BEFORE INSERT OR UPDATE ON users FOR EACH ROW EXECUTE FUNCTION validate_email()
+    set_timestamp BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp()
+    user_deletion_audit BEFORE DELETE ON users FOR EACH ROW EXECUTE FUNCTION handle_user_deletion()
+Access method: heap

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
+// MenuIcon component stays the same
 const MenuIcon = ({ isOpen }: { isOpen: boolean }) => (
   <motion.div
     className="relative w-6 h-6"
@@ -38,6 +39,7 @@ const MenuIcon = ({ isOpen }: { isOpen: boolean }) => (
   </motion.div>
 );
 
+// NavLink component stays the same
 const NavLink = ({ href, children, onClick }: { href: string; children: string; onClick?: () => void }) => {
   return (
     <Link href={href} className="block overflow-hidden" onClick={onClick}>
@@ -57,9 +59,53 @@ const NavLink = ({ href, children, onClick }: { href: string; children: string; 
   );
 };
 
-const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+// Updated AuthButton component to handle both mobile and desktop styles
+const AuthButton = ({ isMobile, onClose }: { isMobile?: boolean; onClose?: () => void }) => {
   const { user, logout } = useAuth();
-  
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  const mobileClassName = "px-8 py-2 rounded-lg text-neutral-50 border border-neutral-700 text-sm font-medium";
+  const desktopClassName = "relative z-0 flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-lg border-[1px] border-neutral-700 px-4 py-1.5 font-medium text-neutral-300 transition-all duration-300 before:absolute before:inset-0 before:-z-10 before:translate-y-[200%] before:scale-[2.5] before:rounded-[100%] before:bg-neutral-50 before:transition-transform before:duration-1000 before:content-[''] hover:scale-105 hover:border-neutral-50 hover:text-neutral-900 hover:before:translate-y-[0%] active:scale-100";
+
+  if (user) {
+    return (
+      <motion.button
+        onClick={() => {
+          logout();
+          onClose?.();
+        }}
+        className={isMobile ? mobileClassName : desktopClassName}
+        whileHover={isMobile ? { scale: 1.05 } : undefined}
+        whileTap={isMobile ? { scale: 0.95 } : undefined}
+      >
+        Sign out
+      </motion.button>
+    );
+  }
+
+  return (
+    <Link href="/signin" onClick={onClose}>
+      <motion.div
+        className={isMobile ? mobileClassName : desktopClassName}
+        whileHover={isMobile ? { scale: 1.05 } : undefined}
+        whileTap={isMobile ? { scale: 0.95 } : undefined}
+      >
+        Sign in
+      </motion.div>
+    </Link>
+  );
+};
+
+// Updated MobileMenu component
+const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -74,41 +120,20 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
         className="flex flex-col items-center justify-center h-full gap-8"
       >
         <NavLink href="/" onClick={onClose}>Home</NavLink>
-        <NavLink href="/about" onClick={onClose}>About</NavLink>
+        <NavLink href="/dashboard" onClick={onClose}>dashboard</NavLink>
         <NavLink href="/pricing" onClick={onClose}>Pricing</NavLink>
-        {user ? (
-          <motion.button
-            onClick={() => {
-              logout();
-              onClose();
-            }}
-            className="px-8 py-2 rounded-lg text-neutral-50 border border-neutral-700 text-sm font-medium"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Sign out
-          </motion.button>
-        ) : (
-          <Link href="/signin" onClick={onClose}>
-            <motion.button
-              className="px-8 py-2 rounded-lg text-neutral-50 border border-neutral-700 text-sm font-medium"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Sign in
-            </motion.button>
-          </Link>
-        )}
+        <AuthButton isMobile onClose={onClose} />
       </motion.div>
     </motion.div>
   );
 };
 
+// Main FloatingNav component
 const FloatingNav = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [hasScrolled, setHasScrolled] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const { user, logout } = useAuth();
+    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const isAuthPage = pathname?.includes('signin');
 
@@ -129,6 +154,7 @@ const FloatingNav = () => {
     });
 
     useEffect(() => {
+        setMounted(true);
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
@@ -162,6 +188,10 @@ const FloatingNav = () => {
         return unsubscribeFromVelocity;
     }, [smoothScrollVelocity, navbarPosition, isMobile]);
 
+    if (!mounted) {
+        return null;
+    }
+
     return (
         <>
             {isMobile ? (
@@ -177,7 +207,7 @@ const FloatingNav = () => {
                                     >
                                         <svg
                                             width="24"
-                                            height="auto"
+                                            height="24"
                                             viewBox="0 0 50 39"
                                             fill="none"
                                             xmlns="http://www.w3.org/2000/svg"
@@ -241,7 +271,7 @@ const FloatingNav = () => {
                                 >
                                     <svg
                                         width="24"
-                                        height="auto"
+                                        height="24"
                                         viewBox="0 0 50 39"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
@@ -255,27 +285,9 @@ const FloatingNav = () => {
 
                             <div className="flex items-center gap-6">
                                 <NavLink href="/">Home</NavLink>
-                                <NavLink href="/about">About</NavLink>
+                                <NavLink href="/dashboard">Dashboard</NavLink>
                                 <NavLink href="/pricing">Pricing</NavLink>
-                                
-                                {!isAuthPage && (
-                                    user ? (
-                                        <motion.button
-                                            onClick={() => logout()}
-                                            className="relative z-0 flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-lg border-[1px] border-neutral-700 px-4 py-1.5 font-medium text-neutral-300 transition-all duration-300 before:absolute before:inset-0 before:-z-10 before:translate-y-[200%] before:scale-[2.5] before:rounded-[100%] before:bg-neutral-50 before:transition-transform before:duration-1000 before:content-[''] hover:scale-105 hover:border-neutral-50 hover:text-neutral-900 hover:before:translate-y-[0%] active:scale-100"
-                                        >
-                                            Sign out
-                                        </motion.button>
-                                    ) : (
-                                        <Link href="/signin">
-                                            <motion.button
-                                                className="relative z-0 flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-lg border-[1px] border-neutral-700 px-4 py-1.5 font-medium text-neutral-300 transition-all duration-300 before:absolute before:inset-0 before:-z-10 before:translate-y-[200%] before:scale-[2.5] before:rounded-[100%] before:bg-neutral-50 before:transition-transform before:duration-1000 before:content-[''] hover:scale-105 hover:border-neutral-50 hover:text-neutral-900 hover:before:translate-y-[0%] active:scale-100"
-                                            >
-                                                Sign in
-                                            </motion.button>
-                                        </Link>
-                                    )
-                                )}
+                                {!isAuthPage && <AuthButton />}
                             </div>
                         </motion.nav>
                     </motion.div>
