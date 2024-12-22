@@ -8,7 +8,11 @@ interface TerminalLineProps {
   isCommand?: boolean;
 }
 
-const TerminalLine = ({ text, index, isCommand = false }: TerminalLineProps) => (
+const TerminalLine = ({
+  text,
+  index,
+  isCommand = false,
+}: TerminalLineProps) => (
   <motion.div
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}

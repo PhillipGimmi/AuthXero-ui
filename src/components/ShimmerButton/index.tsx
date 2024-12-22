@@ -11,7 +11,11 @@ interface ShimmerButtonProps {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-const ShimmerButton = ({ text = "Get Started", href, onClick }: ShimmerButtonProps) => {
+const ShimmerButton = ({
+  text = 'Get Started',
+  href,
+  onClick,
+}: ShimmerButtonProps) => {
   return (
     <div style={{ pointerEvents: 'none' }} className="w-full relative">
       <Link href={href}>

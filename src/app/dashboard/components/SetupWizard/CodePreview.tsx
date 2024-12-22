@@ -21,7 +21,9 @@ export const CodePreview: React.FC<CodePreviewProps> = ({ code, onCopy }) => (
           transition-colors flex items-center gap-2 group"
       >
         <Code className="w-4 h-4" />
-        <span className="group-hover:text-blue-400 transition-colors">Copy Code</span>
+        <span className="group-hover:text-blue-400 transition-colors">
+          Copy Code
+        </span>
       </button>
     </div>
     <div className="bg-zinc-900/50 rounded-lg p-6 overflow-x-auto backdrop-blur-sm border border-zinc-800">

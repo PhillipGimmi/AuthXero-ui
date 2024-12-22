@@ -28,38 +28,41 @@ export interface AuthStat {
 
 // Animation variants
 export const contentVariants = {
-    value: {
-      enter: (direction: number) => ({
-        x: direction > 0 ? 100 : -100,
-        opacity: 0,
-      }),
-      center: {
-        x: 0,
-        opacity: 1,
-      }, // Corrected closing brace
-      exit: (direction: number) => ({
-        x: direction < 0 ? 100 : -100,
-        opacity: 0,
-      }),
-    },
-    graph: {
-      enter: (direction: number) => ({
-        x: direction > 0 ? 100 : -100,
-        opacity: 0,
-      }),
-      center: {
-        x: 0,
-        opacity: 1,
-      }, // Corrected closing brace
-      exit: (direction: number) => ({
-        x: direction < 0 ? 100 : -100,
-        opacity: 0,
-      }),
-    },
-  };
+  value: {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 100 : -100,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    }, // Corrected closing brace
+    exit: (direction: number) => ({
+      x: direction < 0 ? 100 : -100,
+      opacity: 0,
+    }),
+  },
+  graph: {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 100 : -100,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    }, // Corrected closing brace
+    exit: (direction: number) => ({
+      x: direction < 0 ? 100 : -100,
+      opacity: 0,
+    }),
+  },
+};
 
 // Components
-export const CustomTooltip: React.FC<CustomTooltipProps> = ({ text, mousePosition }) => {
+export const CustomTooltip: React.FC<CustomTooltipProps> = ({
+  text,
+  mousePosition,
+}) => {
   if (!mousePosition) return null;
 
   return createPortal(
@@ -75,7 +78,7 @@ export const CustomTooltip: React.FC<CustomTooltipProps> = ({ text, mousePositio
     >
       {text}
     </div>,
-    document.body
+    document.body,
   );
 };
 

@@ -3,37 +3,52 @@ import { motion } from 'framer-motion';
 import {
   GeoSecurityData,
   TooltipProps,
-  failureReasons
+  failureReasons,
 } from './security-types';
 
 interface GlobalSecurityViewProps {
   data: GeoSecurityData[];
-  onHover: (content: TooltipProps['content'] | null, event?: React.MouseEvent) => void;
+  onHover: (
+    content: TooltipProps['content'] | null,
+    event?: React.MouseEvent,
+  ) => void;
 }
 
-const GlobalSecurityView: React.FC<GlobalSecurityViewProps> = ({ 
-  data, 
-  onHover 
+const GlobalSecurityView: React.FC<GlobalSecurityViewProps> = ({
+  data,
+  onHover,
 }) => {
-  const totalFailedAttempts = useMemo(() => 
-    data.reduce((sum, region) => sum + region.failedAttempts, 0),
-    [data]
+  const totalFailedAttempts = useMemo(
+    () => data.reduce((sum, region) => sum + region.failedAttempts, 0),
+    [data],
   );
 
-  const handleReasonHover = (reason: typeof failureReasons[0], event: React.MouseEvent) => {
-    onHover({
-      title: reason.reason,
-      value: `${reason.percentage}%`,
-      description: `${Math.round((totalFailedAttempts * reason.percentage) / 100).toLocaleString()} events`
-    }, event);
+  const handleReasonHover = (
+    reason: (typeof failureReasons)[0],
+    event: React.MouseEvent,
+  ) => {
+    onHover(
+      {
+        title: reason.reason,
+        value: `${reason.percentage}%`,
+        description: `${Math.round((totalFailedAttempts * reason.percentage) / 100).toLocaleString()} events`,
+      },
+      event,
+    );
   };
 
-  const handleRegionHover = (region: GeoSecurityData, event: React.MouseEvent) => {
-    onHover({
-      title: region.region,
-      value: `${((region.failedAttempts / totalFailedAttempts) * 100).toFixed(1)}%`,
-      description: `${region.failedAttempts.toLocaleString()} failed attempts`
-    }, event);
+  const handleRegionHover = (
+    region: GeoSecurityData,
+    event: React.MouseEvent,
+  ) => {
+    onHover(
+      {
+        title: region.region,
+        value: `${((region.failedAttempts / totalFailedAttempts) * 100).toFixed(1)}%`,
+        description: `${region.failedAttempts.toLocaleString()} failed attempts`,
+      },
+      event,
+    );
   };
 
   return (
@@ -46,7 +61,7 @@ const GlobalSecurityView: React.FC<GlobalSecurityViewProps> = ({
       <div className="text-3xl font-bold text-white text-center mb-4">
         {totalFailedAttempts.toLocaleString()} Failed Attempts
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4 mb-6">
         {failureReasons.map((reason, index) => (
           <motion.div
@@ -62,9 +77,7 @@ const GlobalSecurityView: React.FC<GlobalSecurityViewProps> = ({
             <div className="text-2xl font-bold text-white">
               {reason.percentage}%
             </div>
-            <motion.div 
-              className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden"
-            >
+            <motion.div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${reason.percentage}%` }}
@@ -88,7 +101,8 @@ const GlobalSecurityView: React.FC<GlobalSecurityViewProps> = ({
           >
             <div className="text-sm text-zinc-400 mb-1">{region.region}</div>
             <div className="text-lg font-medium text-white">
-              {((region.failedAttempts / totalFailedAttempts) * 100).toFixed(1)}%
+              {((region.failedAttempts / totalFailedAttempts) * 100).toFixed(1)}
+              %
             </div>
           </motion.div>
         ))}

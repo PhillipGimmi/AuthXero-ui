@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class', // Enable class-based dark mode
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -107,10 +108,12 @@ const config: Config = {
         },
         glow: {
           '0%': {
-            textShadow: '0 0 4px rgba(255,255,255,0.1), 0 0 8px rgba(255,255,255,0.2)',
+            textShadow:
+              '0 0 4px rgba(255,255,255,0.1), 0 0 8px rgba(255,255,255,0.2)',
           },
           '100%': {
-            textShadow: '0 0 8px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.5)',
+            textShadow:
+              '0 0 8px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.5)',
           },
         },
       },

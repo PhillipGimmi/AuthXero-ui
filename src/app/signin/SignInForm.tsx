@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import type { AuthMode, ValidationResult, AuthResponse, SignUpCredentials, AuthCredentials } from '@/types/auth';
+import type {
+  AuthMode,
+  ValidationResult,
+  AuthResponse,
+  SignUpCredentials,
+  AuthCredentials,
+} from '@/types/auth';
 import ShimmerButton from '@/components/ShimmerButton';
 
 interface SignInFormProps {
@@ -125,15 +131,21 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
     };
   }, []);
 
-  const validatePassword = useCallback((password: string, isSignup: boolean): ValidationResult => {
-    if (!password) {
-      return { isValid: false, error: 'Please enter your password.' };
-    }
-    if (isSignup && password.length < 8) {
-      return { isValid: false, error: 'Password must be at least 8 characters long.' };
-    }
-    return { isValid: true };
-  }, []);
+  const validatePassword = useCallback(
+    (password: string, isSignup: boolean): ValidationResult => {
+      if (!password) {
+        return { isValid: false, error: 'Please enter your password.' };
+      }
+      if (isSignup && password.length < 8) {
+        return {
+          isValid: false,
+          error: 'Password must be at least 8 characters long.',
+        };
+      }
+      return { isValid: true };
+    },
+    [],
+  );
 
   const validateConfirmPassword = useCallback(
     (password: string, confirmPassword: string): ValidationResult => {
@@ -142,7 +154,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       }
       return { isValid: true };
     },
-    []
+    [],
   );
 
   const validateForm = useCallback(() => {
@@ -151,7 +163,10 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       throw new Error(emailValidation.error ?? '');
     }
 
-    const passwordValidation = validatePassword(formState.password, mode === 'signup');
+    const passwordValidation = validatePassword(
+      formState.password,
+      mode === 'signup',
+    );
     if (!passwordValidation.isValid) {
       throw new Error(passwordValidation.error ?? '');
     }
@@ -162,13 +177,19 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       }
       const confirmPasswordValidation = validateConfirmPassword(
         formState.password,
-        formState.confirmPassword
+        formState.confirmPassword,
       );
       if (!confirmPasswordValidation.isValid) {
         throw new Error(confirmPasswordValidation.error ?? '');
       }
     }
-  }, [formState, mode, validateEmail, validatePassword, validateConfirmPassword]);
+  }, [
+    formState,
+    mode,
+    validateEmail,
+    validatePassword,
+    validateConfirmPassword,
+  ]);
 
   const handleAuthentication = async (): Promise<AuthResponse> => {
     try {
@@ -177,53 +198,53 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
           email: formState.email,
           password: formState.password,
         };
-   
+
         // Attempt login
         const response = await login(loginPayload);
-   
+
         // Log authentication response for debugging
         console.debug('Authentication Response:', {
           success: response.success,
           verified: response.user?.email_verified,
-          requiresVerification: response.requiresVerification
+          requiresVerification: response.requiresVerification,
         });
-   
+
         // Handle successful login
         if (response.success) {
           // User exists and is verified
           if (response.user?.email_verified === true) {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Smooth transition delay
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Smooth transition delay
             router.push('/dashboard');
             return {
               ...response,
-              requiresVerification: false
+              requiresVerification: false,
             };
           }
-   
+
           // User exists but needs verification
           if (response.user?.email_verified === false) {
             return {
               ...response,
-              requiresVerification: true
+              requiresVerification: true,
             };
           }
-   
+
           // Default to verified if status is undefined/null
           router.push('/dashboard');
           return {
             ...response,
-            requiresVerification: false
+            requiresVerification: false,
           };
         }
-   
+
         // Handle unsuccessful login
         return {
           success: false,
           error: response.error ?? 'Login failed',
-          requiresVerification: false
+          requiresVerification: false,
         };
       }
-   
+
       // Handle signup
       const signupPayload: SignUpCredentials = {
         name: formState.name,
@@ -231,21 +252,20 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
         password: formState.password,
         confirmPassword: formState.confirmPassword,
       };
-   
+
       const response = await signup(signupPayload);
-   
+
       // Always require verification for new signups
       return {
         ...response,
-        requiresVerification: true
+        requiresVerification: true,
       };
-   
     } catch (error) {
       console.error('Authentication error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed',
-        requiresVerification: false
+        requiresVerification: false,
       };
     }
   };
@@ -255,7 +275,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
       const response = await verifyEmail(formState.verificationCode);
 
       if (response.success) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         router.push('/dashboard');
       } else {
         setFormState((prev) => ({
@@ -283,16 +303,18 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
     }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
-   
+
     try {
-      setFormState(prev => ({ 
-        ...prev, 
-        error: '', 
-        isLoading: true 
+      setFormState((prev) => ({
+        ...prev,
+        error: '',
+        isLoading: true,
       }));
-   
+
       // Handle verification code submission
       if (formState.showVerificationField) {
         if (!formState.verificationCode.trim()) {
@@ -301,69 +323,72 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
         await handleVerifyCode();
         return;
       }
-   
+
       // Validate form before submission
       try {
         validateForm();
       } catch (validationError) {
-        setFormState(prev => ({
+        setFormState((prev) => ({
           ...prev,
-          error: validationError instanceof Error ? validationError.message : 'Validation failed',
-          isLoading: false
+          error:
+            validationError instanceof Error
+              ? validationError.message
+              : 'Validation failed',
+          isLoading: false,
         }));
         return;
       }
-   
+
       // Attempt authentication
       const response = await handleAuthentication();
-   
+
       // Handle authentication failure
       if (!response.success) {
-        setFormState(prev => ({
+        setFormState((prev) => ({
           ...prev,
           error: response.error ?? 'Authentication failed. Please try again.',
-          isLoading: false
+          isLoading: false,
         }));
         return;
       }
-   
+
       // Handle verification requirement
       if (response.requiresVerification === true) {
-        setFormState(prev => ({ 
-          ...prev, 
+        setFormState((prev) => ({
+          ...prev,
           showVerificationField: true,
           error: '',
-          isLoading: false
+          isLoading: false,
         }));
         return;
       }
-   
+
       // Handle successful authentication (navigation handled in handleAuthentication)
-      setFormState(prev => ({
+      setFormState((prev) => ({
         ...prev,
         error: '',
         isLoading: false,
-        showVerificationField: false
+        showVerificationField: false,
       }));
-   
     } catch (error) {
       // Handle unexpected errors
       console.error('Form submission error:', error);
-      setFormState(prev => ({
+      setFormState((prev) => ({
         ...prev,
-        error: error instanceof Error 
-          ? error.message 
-          : 'An unexpected error occurred. Please try again.',
-        isLoading: false
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred. Please try again.',
+        isLoading: false,
       }));
     } finally {
       // Ensure loading state is cleared in all cases
-      setFormState(prev => ({ 
-        ...prev, 
-        isLoading: false 
+      setFormState((prev) => ({
+        ...prev,
+        isLoading: false,
       }));
     }
-   };
+  };
 
   const handleBackToLogin = () => {
     setFormState((prev) => ({
@@ -411,7 +436,10 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
           className="space-y-4"
         >
           <motion.div variants={inputVariants} className="mb-6">
-            <label htmlFor="verificationCode" className="mb-1.5 block text-zinc-400">
+            <label
+              htmlFor="verificationCode"
+              className="mb-1.5 block text-zinc-400"
+            >
               Verification Code
             </label>
             <input
@@ -494,7 +522,9 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
               className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-400 text-white ring-1 ring-transparent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-100"
               value={formState.password}
               onChange={handleInputChange}
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              autoComplete={
+                mode === 'signup' ? 'new-password' : 'current-password'
+              }
               disabled={formState.isLoading}
               required
               minLength={8}
@@ -503,7 +533,10 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
 
           {mode === 'signup' && (
             <motion.div variants={inputVariants} className="mb-6">
-              <label htmlFor="confirmPassword" className="mb-1.5 block text-zinc-400">
+              <label
+                htmlFor="confirmPassword"
+                className="mb-1.5 block text-zinc-400"
+              >
                 Confirm Password
               </label>
               <input
@@ -524,7 +557,11 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
         </motion.div>
       )}
 
-      <motion.div variants={buttonContainerVariants} initial="initial" animate="animate">
+      <motion.div
+        variants={buttonContainerVariants}
+        initial="initial"
+        animate="animate"
+      >
         <motion.div variants={buttonVariants}>
           <div className="mb-[-10px]">
             <ShimmerButton
@@ -536,7 +573,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
               }}
             />
           </div>
-          </motion.div>
+        </motion.div>
       </motion.div>
 
       {!formState.showVerificationField && (
@@ -570,8 +607,8 @@ const SignInForm: React.FC<SignInFormProps> = ({ mode }) => {
           animate="animate"
           className="text-xs text-zinc-400 mt-4"
         >
-          Please enter the verification code sent to your email.
-          If you don&apost see it, check your spam folder.
+          Please enter the verification code sent to your email. If you
+          don&apost see it, check your spam folder.
         </motion.p>
       )}
     </motion.form>

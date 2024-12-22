@@ -10,11 +10,11 @@ interface ChartCardProps {
   content?: React.ReactNode;
 }
 
-const ChartCard: React.FC<ChartCardProps> = ({ 
-  title, 
-  subtitle, 
-  chart, 
-  content 
+const ChartCard: React.FC<ChartCardProps> = ({
+  title,
+  subtitle,
+  chart,
+  content,
 }) => {
   return (
     <motion.div

@@ -1,0 +1,101 @@
+File Operations
+
+# List project structure (excluding node_modules, .git, dist)
+find . \( -path ./node_modules -o -path ./.next -o -path ./.git -o -path ./dist \) -prune -o -type f -print
+
+
+# List only JavaScript/TypeScript files
+find . -type f -name "*.js" -o -name "*.ts" -o -name "*.tsx"
+
+# Count lines of code (excluding node_modules)
+find . -type f -name "*.js" -o -name "*.ts" -o -name "*.tsx" | xargs wc -l
+
+# Find files containing specific text
+grep -r "TODO" . --exclude-dir={node_modules,dist,.git}
+
+
+
+Docker Commands
+
+# Build and run development environment
+docker-compose up dev
+
+# Build and run production environment
+docker-compose up web
+
+# Rebuild containers
+docker-compose build
+
+# Stop all containers
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Clean up unused images and containers
+docker system prune -a
+
+
+Git Operations
+
+# Create new branch and switch to it
+git checkout -b feature/branch-name
+
+# Update feature branch with main
+git checkout feature/branch-name
+git rebase main
+
+# Squash last N commits
+git rebase -i HEAD~N
+
+# Undo last commit but keep changes
+git reset HEAD~1
+
+# Temporarily store changes
+git stash
+git stash pop
+
+# View branch history
+git log --graph --oneline --all
+
+
+NPM Commands
+
+# Install dependencies
+npm install
+npm ci  # Clean install
+
+# Development
+npm run dev
+npm run lint
+npm run format
+
+# Building
+npm run build
+npm run preview
+
+# Testing
+npm run test
+npm run test:watch
+npm run test:coverage
+
+# Clean up
+npm prune  # Remove unused packages
+rm -rf node_modules
+rm -rf dist
+
+
+
+ESLint/Prettier
+
+# Run ESLint
+npm run lint
+
+# Fix ESLint issues
+npm run lint -- --fix
+
+# Run Prettier
+npm run format
+
+# Check formatting without fixing
+npm run check-format

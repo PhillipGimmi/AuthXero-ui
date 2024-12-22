@@ -26,7 +26,12 @@ interface CustomTooltipProps {
   isHovered?: boolean;
 }
 
-export const CustomTooltip: React.FC<CustomTooltipProps> = ({ label, value, color, isHovered }) => (
+export const CustomTooltip: React.FC<CustomTooltipProps> = ({
+  label,
+  value,
+  color,
+  isHovered,
+}) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -35,27 +40,31 @@ export const CustomTooltip: React.FC<CustomTooltipProps> = ({ label, value, colo
     style={{
       background: `linear-gradient(135deg, ${color}${isHovered ? '75' : '45'}, ${color}${isHovered ? '65' : '35'})`,
       border: `1px solid ${color}${isHovered ? '95' : '60'}`,
-      boxShadow: isHovered 
-        ? `0 0 40px ${color}60, 0 0 20px ${color}40, inset 0 0 20px ${color}30` 
+      boxShadow: isHovered
+        ? `0 0 40px ${color}60, 0 0 20px ${color}40, inset 0 0 20px ${color}30`
         : `0 0 20px ${color}25`,
       transform: `scale(${isHovered ? 1.03 : 1})`,
-      filter: isHovered ? 'brightness(1.3) contrast(1.1)' : 'none'
+      filter: isHovered ? 'brightness(1.3) contrast(1.1)' : 'none',
     }}
   >
-    <span className="text-sm font-medium text-zinc-100">
-      {label}
-    </span>
+    <span className="text-sm font-medium text-zinc-100">{label}</span>
     <span className="text-xl font-bold text-white">
       {typeof value === 'number' ? value.toLocaleString() : value}
     </span>
   </motion.div>
 );
 
-interface TooltipContainerProps extends Omit<TooltipProps<number, string>, 'content'> {
+interface TooltipContainerProps
+  extends Omit<TooltipProps<number, string>, 'content'> {
   hoveredLine: string | null;
 }
 
-export const TooltipContainer: React.FC<TooltipContainerProps> = ({ active, payload, label, hoveredLine }) => {
+export const TooltipContainer: React.FC<TooltipContainerProps> = ({
+  active,
+  payload,
+  label,
+  hoveredLine,
+}) => {
   if (active && payload?.length) {
     return (
       <motion.div
@@ -69,13 +78,15 @@ export const TooltipContainer: React.FC<TooltipContainerProps> = ({ active, payl
           {/* "Users" (Blue) div is displayed above "Logins" (Green) div */}
           <CustomTooltip
             label="Logins"
-            value={payload.find(item => item.dataKey === "users")?.value ?? 0}
+            value={payload.find((item) => item.dataKey === 'users')?.value ?? 0}
             color={COLORS.blue}
             isHovered={hoveredLine === 'users'}
           />
           <CustomTooltip
             label="Users"
-            value={payload.find(item => item.dataKey === "logins")?.value ?? 0}
+            value={
+              payload.find((item) => item.dataKey === 'logins')?.value ?? 0
+            }
             color={COLORS.green}
             isHovered={hoveredLine === 'logins'}
           />
@@ -93,12 +104,17 @@ interface MetricDisplayProps {
   trend?: number;
 }
 
-export const MetricDisplay: React.FC<MetricDisplayProps> = ({ label, value, color, trend }) => (
+export const MetricDisplay: React.FC<MetricDisplayProps> = ({
+  label,
+  value,
+  color,
+  trend,
+}) => (
   <motion.div
     initial={{ opacity: 0, y: -20 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: 20 }}
-    transition={{ duration: 0.3, ease: "easeOut" }}
+    transition={{ duration: 0.3, ease: 'easeOut' }}
     className="flex flex-col items-center"
   >
     <div className="relative px-6 py-3 rounded-xl bg-black/50 backdrop-blur-sm border border-white/10 shadow-lg">
@@ -108,7 +124,7 @@ export const MetricDisplay: React.FC<MetricDisplayProps> = ({ label, value, colo
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {trend !== undefined && (
-          <div 
+          <div
             className={`
               flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full 
               ${trend >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}
@@ -116,9 +132,7 @@ export const MetricDisplay: React.FC<MetricDisplayProps> = ({ label, value, colo
               text-xs font-medium
             `}
           >
-            <span className="text-sm">
-              {trend >= 0 ? '↑' : '↓'}
-            </span>
+            <span className="text-sm">{trend >= 0 ? '↑' : '↓'}</span>
             {Math.abs(trend).toFixed(1)}%
           </div>
         )}
@@ -134,14 +148,14 @@ interface LiveIndicatorProps {
 export const LiveIndicator: React.FC<LiveIndicatorProps> = ({ isLive }) => (
   <div className="absolute top-4 right-4 flex items-center space-x-2">
     <motion.div
-      animate={{ 
+      animate={{
         opacity: isLive ? [1, 0.5, 1] : 1,
-        scale: isLive ? [1, 0.95, 1] : 1
+        scale: isLive ? [1, 0.95, 1] : 1,
       }}
-      transition={{ 
+      transition={{
         duration: 2,
         repeat: isLive ? Infinity : 0,
-        ease: "easeInOut"
+        ease: 'easeInOut',
       }}
       className="flex items-center space-x-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10"
     >

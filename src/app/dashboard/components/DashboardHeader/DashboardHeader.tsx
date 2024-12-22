@@ -9,20 +9,22 @@ interface DashboardHeaderProps {
   onSettings?: () => void;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
-  user, 
-  onExport, 
-  onSettings 
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+  user,
+  onExport,
+  onSettings,
 }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center justify-between"
     >
       <div>
         <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-        <p className="text-zinc-400 mt-2">Welcome back, {user?.name ?? user?.email}</p>
+        <p className="text-zinc-400 mt-2">
+          Welcome back, {user?.name ?? user?.email}
+        </p>
       </div>
       <div className="flex items-center gap-4">
         <motion.button

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 interface DataPoint {
   time: string;
@@ -9,7 +9,7 @@ interface DataPoint {
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{
-    dataKey: "value" | "successRate";
+    dataKey: 'value' | 'successRate';
     value: number;
     payload: DataPoint;
   }>;
@@ -27,18 +27,29 @@ const CustomTooltip: React.FC<TooltipProps> = ({
 
   const currentPayload = payload[0];
   const currentValue = currentPayload.value;
-  const previousPeriodEntry = previousPeriodData.find((entry) => entry.time === label);
+  const previousPeriodEntry = previousPeriodData.find(
+    (entry) => entry.time === label,
+  );
   const previousValue = previousPeriodEntry?.value ?? 0;
 
   const calculateChange = (current: number, previous: number) => {
-    if (previous === 0) return { symbol: "→", value: "N/A", colorClass: "text-white" };
+    if (previous === 0)
+      return { symbol: '→', value: 'N/A', colorClass: 'text-white' };
     const change = ((current - previous) / previous) * 100;
     if (change > 0) {
-      return { symbol: "▲", value: change.toFixed(1), colorClass: "text-green-400" };
+      return {
+        symbol: '▲',
+        value: change.toFixed(1),
+        colorClass: 'text-green-400',
+      };
     } else if (change < 0) {
-      return { symbol: "▼", value: Math.abs(change).toFixed(1), colorClass: "text-red-400" };
+      return {
+        symbol: '▼',
+        value: Math.abs(change).toFixed(1),
+        colorClass: 'text-red-400',
+      };
     }
-    return { symbol: "→", value: "0", colorClass: "text-white" };
+    return { symbol: '→', value: '0', colorClass: 'text-white' };
   };
 
   const change = calculateChange(currentValue, previousValue);
@@ -61,7 +72,9 @@ const CustomTooltip: React.FC<TooltipProps> = ({
 
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <div className="text-sm text-gray-400 font-medium">Change</div>
-          <div className={`text-sm font-medium ${change.colorClass} flex items-center gap-1.5`}>
+          <div
+            className={`text-sm font-medium ${change.colorClass} flex items-center gap-1.5`}
+          >
             <span className="text-lg">{change.symbol}</span>
             <span>{change.value}%</span>
           </div>

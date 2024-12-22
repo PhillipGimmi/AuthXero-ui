@@ -14,7 +14,7 @@ interface TooltipProps {
     payload: DataPoint;
   }>;
   label?: string;
-  hoveredKey: "users" | "logins" | null;
+  hoveredKey: 'users' | 'logins' | null;
   previousPeriodData: DataPoint[];
 }
 
@@ -23,46 +23,51 @@ const GraphTooltip: React.FC<TooltipProps> = ({
   payload,
   label,
   hoveredKey,
-  previousPeriodData
+  previousPeriodData,
 }) => {
   if (!active || !payload?.length || !hoveredKey) return null;
 
-  const currentPayload = payload.find(p => p.dataKey === hoveredKey);
+  const currentPayload = payload.find((p) => p.dataKey === hoveredKey);
   if (!currentPayload) return null;
 
-  const previousPeriodEntry = previousPeriodData.find(entry => entry.time === label);
+  const previousPeriodEntry = previousPeriodData.find(
+    (entry) => entry.time === label,
+  );
   if (!previousPeriodEntry) return null;
 
   const currentValue = currentPayload.value;
   const previousValue = previousPeriodEntry[hoveredKey];
 
-  const calculateChange = (current: number, previous: number): {
-    symbol: "▲" | "▼" | "→";
+  const calculateChange = (
+    current: number,
+    previous: number,
+  ): {
+    symbol: '▲' | '▼' | '→';
     value: string;
     color: string;
   } => {
-    if (previous === 0) return { symbol: "→", value: "0", color: "#9CA3AF" };
+    if (previous === 0) return { symbol: '→', value: '0', color: '#9CA3AF' };
 
     const change = ((current - previous) / previous) * 100;
-    
+
     if (change > 0) {
       return {
-        symbol: "▲",
+        symbol: '▲',
         value: Math.abs(change).toFixed(1),
-        color: "#4ADE80" // Green-400 equivalent
+        color: '#4ADE80', // Green-400 equivalent
       };
     }
     if (change < 0) {
       return {
-        symbol: "▼",
+        symbol: '▼',
         value: Math.abs(change).toFixed(1),
-        color: "#F87171" // Red-400 equivalent
+        color: '#F87171', // Red-400 equivalent
       };
     }
     return {
-      symbol: "→",
-      value: "0",
-      color: "#9CA3AF"
+      symbol: '→',
+      value: '0',
+      color: '#9CA3AF',
     };
   };
 
@@ -81,7 +86,10 @@ const GraphTooltip: React.FC<TooltipProps> = ({
       </div>
       <div className="flex items-center justify-between mt-2">
         <div className="text-sm text-gray-400 capitalize">{hoveredKey}</div>
-        <div className="text-sm font-medium flex items-center gap-1" style={{ color: change.color }}>
+        <div
+          className="text-sm font-medium flex items-center gap-1"
+          style={{ color: change.color }}
+        >
           <span>{change.symbol}</span>
           <span>{change.value}%</span>
         </div>

@@ -20,9 +20,12 @@ const Dashboard = dynamic(() => import('./Dashboard'), {
   ssr: false,
 });
 
-const SetupWizard = dynamic(() => import('./components/SetupWizard/SetupWizard'), {
-  ssr: false,
-});
+const SetupWizard = dynamic(
+  () => import('./components/SetupWizard/SetupWizard'),
+  {
+    ssr: false,
+  },
+);
 
 export default function DashboardPage() {
   const { user, loading, refreshToken } = useAuth() as AuthContextType;
@@ -52,7 +55,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <Suspense 
+      <Suspense
         fallback={
           <div className="min-h-screen flex items-center justify-center">
             <LoadingDots />
@@ -61,7 +64,7 @@ export default function DashboardPage() {
       >
         <div className="min-h-screen">
           {!user.isConfigured ? (
-            <SetupWizard 
+            <SetupWizard
               userEmail={user.email}
               onComplete={async () => {
                 // Use refreshToken to get updated user data

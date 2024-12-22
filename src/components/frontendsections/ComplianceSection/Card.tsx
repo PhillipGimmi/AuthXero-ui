@@ -1,5 +1,5 @@
 // Card.tsx
-"use client";
+'use client';
 
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
@@ -11,16 +11,21 @@ interface CardProps {
   isExpanded: boolean;
 }
 
-export const Card = ({ children, className = '', onClick, isExpanded }: CardProps) => (
+export const Card = ({
+  children,
+  className = '',
+  onClick,
+  isExpanded,
+}: CardProps) => (
   <motion.div
     layout
     onClick={onClick}
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -20 }}
-    whileHover={{ 
+    whileHover={{
       scale: 1.02,
-      transition: { duration: 0.3, ease: "easeOut" }
+      transition: { duration: 0.3, ease: 'easeOut' },
     }}
     className={`
       rounded-2xl border border-zinc-800 

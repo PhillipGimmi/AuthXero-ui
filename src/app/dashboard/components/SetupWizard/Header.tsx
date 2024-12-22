@@ -10,6 +10,8 @@ export const Header = () => (
     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
       One-Click Auth Setup
     </h1>
-    <p className="text-zinc-400">Secure authentication configured automatically</p>
+    <p className="text-zinc-400">
+      Secure authentication configured automatically
+    </p>
   </motion.div>
 );

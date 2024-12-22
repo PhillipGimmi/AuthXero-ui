@@ -35,24 +35,24 @@ const containerVariants = {
 };
 
 const fadeInUp = {
-  initial: { 
-    opacity: 0, 
+  initial: {
+    opacity: 0,
     y: 20,
-    filter: "blur(10px)",
+    filter: 'blur(10px)',
   },
-  animate: { 
-    opacity: 1, 
+  animate: {
+    opacity: 1,
     y: 0,
-    filter: "blur(0px)",
+    filter: 'blur(0px)',
     transition: {
       duration: 0.6,
       ease: [0.25, 0.1, 0.25, 1],
     },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     y: -20,
-    filter: "blur(10px)",
+    filter: 'blur(10px)',
     transition: {
       duration: 0.3,
     },
@@ -60,46 +60,49 @@ const fadeInUp = {
 };
 
 const backgroundVariants = {
-  initial: { 
+  initial: {
     opacity: 0,
     scale: 1.1,
   },
-  animate: { 
+  animate: {
     opacity: 1,
     scale: 1,
-    transition: { 
+    transition: {
       duration: 1.5,
-      ease: "easeOut",
+      ease: 'easeOut',
     },
   },
 };
 
-const Heading = ({ mode, onToggleMode }: { mode: AuthMode; onToggleMode: () => void }) => (
+const Heading = ({
+  mode,
+  onToggleMode,
+}: {
+  mode: AuthMode;
+  onToggleMode: () => void;
+}) => (
   <motion.div
     initial="initial"
     animate="animate"
     variants={{
       initial: { opacity: 0 },
-      animate: { 
-        opacity: 1, 
-        transition: { 
+      animate: {
+        opacity: 1,
+        transition: {
           staggerChildren: 0.08, // Sped up from 0.15
-          delayChildren: 0.2,    // Sped up from 0.3
+          delayChildren: 0.2, // Sped up from 0.3
         },
       },
     }}
   >
-    <motion.h1 
+    <motion.h1
       variants={fadeInUp}
       className="text-3xl font-bold text-zinc-100 relative hover:scale-[1.02] transition-transform duration-200"
     >
       Logo
     </motion.h1>
     <div className="mb-9 mt-6 space-y-1.5">
-      <motion.h2 
-        variants={fadeInUp}
-        className="text-2xl font-semibold"
-      >
+      <motion.h2 variants={fadeInUp} className="text-2xl font-semibold">
         <AnimatePresence mode="wait">
           <motion.span
             key={mode}
@@ -108,16 +111,15 @@ const Heading = ({ mode, onToggleMode }: { mode: AuthMode; onToggleMode: () => v
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }} // Sped up from 0.3
           >
-            {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
+            {mode === 'signin'
+              ? 'Sign in to your account'
+              : 'Create your account'}
           </motion.span>
         </AnimatePresence>
       </motion.h2>
       <div className="text-zinc-400">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={mode}
-            className="inline-block"
-          >
+          <motion.div key={mode} className="inline-block">
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -125,7 +127,9 @@ const Heading = ({ mode, onToggleMode }: { mode: AuthMode; onToggleMode: () => v
               transition={{ duration: 0.2 }} // Sped up from 0.3
               className="inline-block"
             >
-              {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
+              {mode === 'signin'
+                ? "Don't have an account?"
+                : 'Already have an account?'}
             </motion.span>
 
             <motion.button
@@ -140,9 +144,12 @@ const Heading = ({ mode, onToggleMode }: { mode: AuthMode; onToggleMode: () => v
                   initial={{}}
                   animate={{ transition: { staggerChildren: 0.02 } }} // Sped up from 0.05
                 >
-                  {(mode === 'signin' ? ['Create', 'one.'] : ['Sign', 'in', 'instead.']).map((word, wordIndex) => (
-                    <motion.span 
-                      key={wordIndex} 
+                  {(mode === 'signin'
+                    ? ['Create', 'one.']
+                    : ['Sign', 'in', 'instead.']
+                  ).map((word, wordIndex) => (
+                    <motion.span
+                      key={wordIndex}
                       className="inline-block whitespace-nowrap"
                       initial={{}}
                       animate={{ transition: { staggerChildren: 0.02 } }} // Sped up from 0.05
@@ -152,20 +159,20 @@ const Heading = ({ mode, onToggleMode }: { mode: AuthMode; onToggleMode: () => v
                           key={letterIndex}
                           className="inline-block"
                           variants={{
-                            initial: { opacity: 0, y: 20, filter: "blur(8px)" },
+                            initial: { opacity: 0, y: 20, filter: 'blur(8px)' },
                             animate: {
                               opacity: 1,
                               y: 0,
-                              filter: "blur(0px)",
-                              transition: { duration: 0.25, ease: "easeOut" }, // Sped up from 0.4
-                            }
+                              filter: 'blur(0px)',
+                              transition: { duration: 0.25, ease: 'easeOut' }, // Sped up from 0.4
+                            },
                           }}
                         >
                           {letter}
                         </motion.span>
                       ))}
                       {wordIndex !== (mode === 'signin' ? 1 : 2) && (
-                        <span className="inline-block mr-2">{' '}</span>
+                        <span className="inline-block mr-2"> </span>
                       )}
                     </motion.span>
                   ))}
@@ -183,10 +190,10 @@ const SocialOptions = ({ mode }: { mode: AuthMode }) => (
   <motion.div
     variants={{
       initial: { opacity: 0 },
-      animate: { 
-        opacity: 1, 
-        transition: { 
-          delayChildren: 0.6, 
+      animate: {
+        opacity: 1,
+        transition: {
+          delayChildren: 0.6,
           staggerChildren: 0.1,
         },
       },
@@ -194,10 +201,7 @@ const SocialOptions = ({ mode }: { mode: AuthMode }) => (
     initial="initial"
     animate="animate"
   >
-    <motion.div 
-      variants={fadeInUp} 
-      className="mb-3 flex gap-3"
-    >
+    <motion.div variants={fadeInUp} className="mb-3 flex gap-3">
       <BubbleButton
         onClick={() => (window.location.href = '/api/auth/twitter')}
         className="flex w-full justify-center py-3 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
@@ -229,7 +233,7 @@ const SocialOptions = ({ mode }: { mode: AuthMode }) => (
 );
 
 const Or = () => (
-  <motion.div 
+  <motion.div
     variants={fadeInUp}
     initial="initial"
     animate="animate"

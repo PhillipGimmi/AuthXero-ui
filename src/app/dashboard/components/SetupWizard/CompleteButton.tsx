@@ -7,7 +7,10 @@ interface CompleteButtonProps {
   isGenerating: boolean;
 }
 
-export const CompleteButton: React.FC<CompleteButtonProps> = ({ onClick, isGenerating }) => (
+export const CompleteButton: React.FC<CompleteButtonProps> = ({
+  onClick,
+  isGenerating,
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -22,7 +25,7 @@ export const CompleteButton: React.FC<CompleteButtonProps> = ({ onClick, isGener
     >
       {isGenerating ? (
         <>
-          <span 
+          <span
             className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
             aria-hidden="true"
           />

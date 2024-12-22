@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react';
 import {
   AreaChart,
   Area,
@@ -6,11 +6,11 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import GraphTooltip from "./GraphTooltip";
-import TooltipSection from "./TooltipSection";
+} from 'recharts';
+import GraphTooltip from './GraphTooltip';
+import TooltipSection from './TooltipSection';
 
-type TimeRangeType = "24h" | "7d" | "30d" | "90d";
+type TimeRangeType = '24h' | '7d' | '30d' | '90d';
 
 interface DataPoint {
   time: string;
@@ -46,10 +46,10 @@ const PercentageDisplay: React.FC<PercentageDisplayProps> = ({
   };
 
   const getTrendColor = () => {
-    if (percentageChange.includes("▲")) return "text-green-400";
-    if (percentageChange.includes("▼")) return "text-red-400";
-    if (percentageChange.includes("→")) return "text-white";
-    return "text-white"; // Default case
+    if (percentageChange.includes('▲')) return 'text-green-400';
+    if (percentageChange.includes('▼')) return 'text-red-400';
+    if (percentageChange.includes('→')) return 'text-white';
+    return 'text-white'; // Default case
   };
 
   return (
@@ -74,71 +74,73 @@ const PercentageDisplay: React.FC<PercentageDisplayProps> = ({
 };
 
 const ActivityChart: React.FC<ActivityChartProps> = ({
-  userColor = "#FFFFFF",
-  loginColor = "#00FF00",
-  axisColor = "#FFFFFF",
-  cursorColor = "#FFFFFF",
+  userColor = '#FFFFFF',
+  loginColor = '#00FF00',
+  axisColor = '#FFFFFF',
+  cursorColor = '#FFFFFF',
   data,
-  timeRange = "24h",
+  timeRange = '24h',
 }) => {
-  const [hoveredKey, setHoveredKey] = useState<"users" | "logins" | null>(null);
-  const [displayMode, setDisplayMode] = useState<"users" | "logins">("users");
+  const [hoveredKey, setHoveredKey] = useState<'users' | 'logins' | null>(null);
+  const [displayMode, setDisplayMode] = useState<'users' | 'logins'>('users');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [showTotalTooltip, setShowTotalTooltip] = useState(false);
 
   const timeRangeMap: { [key in TimeRangeType]: number } = {
-    "24h": 24,
-    "7d": 168,
-    "30d": 720,
-    "90d": 2160
+    '24h': 24,
+    '7d': 168,
+    '30d': 720,
+    '90d': 2160,
   };
-  
-  const dataLength = timeRangeMap[timeRange] || timeRangeMap["24h"];
-  
-  const previousPeriodData = data.slice(0, dataLength).map(point => {
-    const userReduction = 0.7 + (Math.random() * 0.15);
-    const loginReduction = 0.65 + (Math.random() * 0.15);
-    
+
+  const dataLength = timeRangeMap[timeRange] || timeRangeMap['24h'];
+
+  const previousPeriodData = data.slice(0, dataLength).map((point) => {
+    const userReduction = 0.7 + Math.random() * 0.15;
+    const loginReduction = 0.65 + Math.random() * 0.15;
+
     return {
       time: point.time,
       users: Math.floor(point.users * userReduction),
-      logins: Math.floor(point.logins * loginReduction)
+      logins: Math.floor(point.logins * loginReduction),
     };
   });
 
   const currentPeriodData = data.slice(dataLength, dataLength * 2);
 
-  const totalCurrentUsers = currentPeriodData[currentPeriodData.length - 1]?.users || 0;
-  const totalPreviousUsers = previousPeriodData[previousPeriodData.length - 1]?.users || 0;
+  const totalCurrentUsers =
+    currentPeriodData[currentPeriodData.length - 1]?.users || 0;
+  const totalPreviousUsers =
+    previousPeriodData[previousPeriodData.length - 1]?.users || 0;
   const totalPreviousLogins = previousPeriodData.reduce(
     (acc, curr) => acc + curr.logins,
-    0
+    0,
   );
   const totalCurrentLogins = currentPeriodData.reduce(
     (acc, curr) => acc + curr.logins,
-    0
+    0,
   );
 
   const getDisplayTotal = useCallback(() => {
     if (hoveredKey) {
-      return hoveredKey === "users" ? totalCurrentUsers : totalCurrentLogins;
+      return hoveredKey === 'users' ? totalCurrentUsers : totalCurrentLogins;
     }
-    return displayMode === "users" ? totalCurrentUsers : totalCurrentLogins;
+    return displayMode === 'users' ? totalCurrentUsers : totalCurrentLogins;
   }, [hoveredKey, displayMode, totalCurrentUsers, totalCurrentLogins]);
 
   const calculatePercentageChange = (
     current: number,
-    previous: number
+    previous: number,
   ): string => {
-    if (previous === 0) return "→ 0%";
+    if (previous === 0) return '→ 0%';
 
     const change = ((current - previous) / previous) * 100;
-    let changeSymbol = "→";
+    let changeSymbol = '→';
 
     if (change > 0) {
-      changeSymbol = "▲";
+      changeSymbol = '▲';
     } else if (change < 0) {
-      changeSymbol = "▼";
+      changeSymbol = '▼';
     }
 
     return `${changeSymbol} ${Math.abs(change).toFixed(1)}%`;
@@ -146,12 +148,12 @@ const ActivityChart: React.FC<ActivityChartProps> = ({
 
   const getPercentageChange = useCallback(() => {
     if (hoveredKey) {
-      if (hoveredKey === "users") {
+      if (hoveredKey === 'users') {
         return calculatePercentageChange(totalCurrentUsers, totalPreviousUsers);
       }
       return calculatePercentageChange(totalCurrentLogins, totalPreviousLogins);
     }
-    if (displayMode === "users") {
+    if (displayMode === 'users') {
       return calculatePercentageChange(totalCurrentUsers, totalPreviousUsers);
     }
     return calculatePercentageChange(totalCurrentLogins, totalPreviousLogins);
@@ -165,7 +167,7 @@ const ActivityChart: React.FC<ActivityChartProps> = ({
   ]);
 
   const handleMetricDoubleClick = () => {
-    setDisplayMode((prev) => (prev === "users" ? "logins" : "users"));
+    setDisplayMode((prev) => (prev === 'users' ? 'logins' : 'users'));
   };
 
   const handleTotalMouseMove = (e: React.MouseEvent) => {
@@ -175,7 +177,7 @@ const ActivityChart: React.FC<ActivityChartProps> = ({
   return (
     <div
       className="relative h-96 rounded-xl shadow-lg p-4 flex flex-col justify-between"
-      style={{ background: "transparent", color: axisColor }}
+      style={{ background: 'transparent', color: axisColor }}
     >
       <div className="flex justify-between items-center mb-4">
         <div className="relative">
@@ -219,24 +221,24 @@ const ActivityChart: React.FC<ActivityChartProps> = ({
               <stop
                 offset="5%"
                 stopColor={userColor}
-                stopOpacity={hoveredKey === "users" ? 1 : 0.8}
+                stopOpacity={hoveredKey === 'users' ? 1 : 0.8}
               />
               <stop
                 offset="95%"
                 stopColor={userColor}
-                stopOpacity={hoveredKey === "users" ? 0.6 : 0.1}
+                stopOpacity={hoveredKey === 'users' ? 0.6 : 0.1}
               />
             </linearGradient>
             <linearGradient id="colorLogins" x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="5%"
                 stopColor={loginColor}
-                stopOpacity={hoveredKey === "logins" ? 1 : 0.8}
+                stopOpacity={hoveredKey === 'logins' ? 1 : 0.8}
               />
               <stop
                 offset="95%"
                 stopColor={loginColor}
-                stopOpacity={hoveredKey === "logins" ? 0.6 : 0.1}
+                stopOpacity={hoveredKey === 'logins' ? 0.6 : 0.1}
               />
             </linearGradient>
           </defs>
@@ -263,19 +265,19 @@ const ActivityChart: React.FC<ActivityChartProps> = ({
             dataKey="logins"
             stroke={loginColor}
             fill="url(#colorLogins)"
-            strokeWidth={hoveredKey === "logins" ? 5 : 3}
-            opacity={hoveredKey === "users" ? 0.3 : 1}
-            onMouseEnter={() => setHoveredKey("logins")}
+            strokeWidth={hoveredKey === 'logins' ? 5 : 3}
+            opacity={hoveredKey === 'users' ? 0.3 : 1}
+            onMouseEnter={() => setHoveredKey('logins')}
           />
-          
+
           <Area
             type="monotone"
             dataKey="users"
             stroke={userColor}
             fill="url(#colorUsers)"
-            strokeWidth={hoveredKey === "users" ? 5 : 3}
-            opacity={hoveredKey === "logins" ? 0.3 : 1}
-            onMouseEnter={() => setHoveredKey("users")}
+            strokeWidth={hoveredKey === 'users' ? 5 : 3}
+            opacity={hoveredKey === 'logins' ? 0.3 : 1}
+            onMouseEnter={() => setHoveredKey('users')}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -39,7 +39,7 @@ export interface TooltipProps {
 }
 
 export const defaultProps = {
-  primaryColor: '#3B82F6' // Default to blue-500
+  primaryColor: '#3B82F6', // Default to blue-500
 };
 
 export const getChangeColor = (value: number) => {
@@ -57,9 +57,9 @@ export const getChangeSymbol = (value: number): string => {
 export const getRiskColor = (level: string, primaryColor: string): string => {
   switch (level) {
     case 'high':
-      return '#ef4444';  // red-500
+      return '#ef4444'; // red-500
     case 'medium':
-      return '#f59e0b';  // amber-500
+      return '#f59e0b'; // amber-500
     case 'low':
       return primaryColor;
     default:
@@ -67,12 +67,12 @@ export const getRiskColor = (level: string, primaryColor: string): string => {
   }
 };
 
-export const generateMetrics = (base: number): SecurityMetric[] => 
+export const generateMetrics = (base: number): SecurityMetric[] =>
   Array.from({ length: 24 }, (_, i) => ({
     id: i,
     time: `${i.toString().padStart(2, '0')}:00`,
     value: Math.round(base + Math.random() * base * 0.2),
-    previousValue: Math.round(base * 0.95)
+    previousValue: Math.round(base * 0.95),
   }));
 
 export const generateData = (): GeoSecurityData[] => [
@@ -82,7 +82,7 @@ export const generateData = (): GeoSecurityData[] => [
     blockedIPs: 142,
     anomalyScore: 8.4,
     riskLevel: 'high',
-    metrics: generateMetrics(120)
+    metrics: generateMetrics(120),
   },
   {
     region: 'North America',
@@ -90,7 +90,7 @@ export const generateData = (): GeoSecurityData[] => [
     blockedIPs: 89,
     anomalyScore: 4.2,
     riskLevel: 'medium',
-    metrics: generateMetrics(80)
+    metrics: generateMetrics(80),
   },
   {
     region: 'Europe',
@@ -98,7 +98,7 @@ export const generateData = (): GeoSecurityData[] => [
     blockedIPs: 115,
     anomalyScore: 6.7,
     riskLevel: 'high',
-    metrics: generateMetrics(100)
+    metrics: generateMetrics(100),
   },
   {
     region: 'South America',
@@ -106,13 +106,13 @@ export const generateData = (): GeoSecurityData[] => [
     blockedIPs: 67,
     anomalyScore: 5.1,
     riskLevel: 'low',
-    metrics: generateMetrics(60)
-  }
+    metrics: generateMetrics(60),
+  },
 ];
 
 export const failureReasons = [
   { reason: 'Invalid Credentials', percentage: 45 },
   { reason: '2FA Failed', percentage: 30 },
   { reason: 'Token Expired', percentage: 15 },
-  { reason: 'Rate Limited', percentage: 10 }
+  { reason: 'Rate Limited', percentage: 10 },
 ];

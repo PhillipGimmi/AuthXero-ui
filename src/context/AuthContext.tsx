@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthXeroClient } from '@/lib/authxero';
 import type {
@@ -22,8 +29,8 @@ const API_CONFIG = {
   ENDPOINTS: {
     VERIFY_EMAIL: '/api/auth/verify-email',
     REFRESH_TOKEN: '/api/auth/refresh-token',
-    LOGOUT: '/api/auth/logout'
-  }
+    LOGOUT: '/api/auth/logout',
+  },
 } as const;
 
 const TOKEN_CONFIG = {
@@ -35,8 +42,8 @@ const TOKEN_CONFIG = {
     path: '/',
     secure: true,
     sameSite: 'lax' as const,
-    maxAge: 86400
-  }
+    maxAge: 86400,
+  },
 } as const;
 
 interface AuthContextType {
@@ -64,13 +71,21 @@ const createTokenManager = () => ({
     document.cookie = `${TOKEN_CONFIG.REFRESH_TOKEN_NAME}=${refreshToken}; path=/; max-age=${TOKEN_CONFIG.EXPIRY * 2}; secure; samesite=lax`;
   },
   getTokens: (): TokenPair => ({
-    token: document.cookie.split('; ').find(row => row.startsWith(`${TOKEN_CONFIG.AUTH_TOKEN_NAME}=`))?.split('=')[1] ?? null,
-    refreshToken: document.cookie.split('; ').find(row => row.startsWith(`${TOKEN_CONFIG.REFRESH_TOKEN_NAME}=`))?.split('=')[1] ?? null
+    token:
+      document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${TOKEN_CONFIG.AUTH_TOKEN_NAME}=`))
+        ?.split('=')[1] ?? null,
+    refreshToken:
+      document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${TOKEN_CONFIG.REFRESH_TOKEN_NAME}=`))
+        ?.split('=')[1] ?? null,
   }),
   removeTokens: () => {
     document.cookie = `${TOKEN_CONFIG.AUTH_TOKEN_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax`;
     document.cookie = `${TOKEN_CONFIG.REFRESH_TOKEN_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax`;
-  }
+  },
 });
 
 const getDeviceInfo = (): DeviceInfo => ({
@@ -78,9 +93,10 @@ const getDeviceInfo = (): DeviceInfo => ({
   screen: `${window.screen.width}x${window.screen.height}`,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   language: window.navigator.language,
-  platform: /Windows|Mac|Linux|Android|iOS/.exec(window.navigator.userAgent)?.[0] ?? 'Unknown'
+  platform:
+    /Windows|Mac|Linux|Android|iOS/.exec(window.navigator.userAgent)?.[0] ??
+    'Unknown',
 });
-
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -88,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading: true,
     isLoggingOut: false,
     error: null,
-    isVerified: false
+    isVerified: false,
   });
 
   const tokenManager = useMemo(() => createTokenManager(), []);
@@ -97,51 +113,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const searchParams = useSearchParams();
 
   const clearError = useCallback(() => {
-    setAuthState(prev => ({ ...prev, error: null }));
+    setAuthState((prev) => ({ ...prev, error: null }));
   }, []);
 
   const handleError = useCallback((err: unknown): AuthXeroError => {
     const error = {
-      message: err instanceof Error ? err.message : 'An unexpected error occurred',
-      status: err instanceof Error && 'status' in err ? (err as ErrorWithStatus).status ?? 500 : 500,
+      message:
+        err instanceof Error ? err.message : 'An unexpected error occurred',
+      status:
+        err instanceof Error && 'status' in err
+          ? ((err as ErrorWithStatus).status ?? 500)
+          : 500,
       timestamp: new Date().toISOString(),
-      details: err instanceof Error ? err.stack : undefined
+      details: err instanceof Error ? err.stack : undefined,
     };
-    setAuthState(prev => ({ ...prev, error }));
+    setAuthState((prev) => ({ ...prev, error }));
     return error;
   }, []);
 
   const handleSessionTimeout = useCallback(() => {
     tokenManager.removeTokens();
-    setAuthState(prev => ({
+    setAuthState((prev) => ({
       ...prev,
       user: null,
-      isVerified: false
+      isVerified: false,
     }));
     router.push('/signin?reason=session_timeout');
   }, [tokenManager, router]);
 
-  const refreshTokenWithRetry = useCallback(async (retryCount = 3): Promise<void> => {
-    for (let i = 0; i < retryCount; i++) {
-      try {
-        const { refreshToken } = tokenManager.getTokens();
-        if (!refreshToken) {
-          handleSessionTimeout();
+  const refreshTokenWithRetry = useCallback(
+    async (retryCount = 3): Promise<void> => {
+      for (let i = 0; i < retryCount; i++) {
+        try {
+          const { refreshToken } = tokenManager.getTokens();
+          if (!refreshToken) {
+            handleSessionTimeout();
+            return;
+          }
+          const response = await client.refreshToken(refreshToken);
+          tokenManager.setTokens(response.token, response.refreshToken);
           return;
+        } catch (err) {
+          if (i === retryCount - 1) {
+            handleSessionTimeout();
+            handleError(err);
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
-        const response = await client.refreshToken(refreshToken);
-        tokenManager.setTokens(response.token, response.refreshToken);
-        return;
-      } catch (err) {
-        if (i === retryCount - 1) {
-          handleSessionTimeout();
-          handleError(err);
-          return;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
       }
-    }
-  }, [client, tokenManager, handleSessionTimeout, handleError]);
+    },
+    [client, tokenManager, handleSessionTimeout, handleError],
+  );
 
   useEffect(() => {
     let isSubscribed = true;
@@ -152,11 +175,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { token } = tokenManager.getTokens();
         if (!token) {
           if (isSubscribed) {
-            setAuthState(prev => ({
+            setAuthState((prev) => ({
               ...prev,
               user: null,
               isVerified: false,
-              loading: false
+              loading: false,
             }));
           }
           return;
@@ -167,14 +190,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!isSubscribed) return;
 
         if (currentUser) {
-          setAuthState(prev => ({
+          setAuthState((prev) => ({
             ...prev,
             user: currentUser,
             isVerified: currentUser.email_verified,
-            loading: false
+            loading: false,
           }));
-          refreshInterval = setInterval(() => void refreshTokenWithRetry(), 
-            (TOKEN_CONFIG.EXPIRY - TOKEN_CONFIG.REFRESH_BUFFER) * 1000
+          refreshInterval = setInterval(
+            () => void refreshTokenWithRetry(),
+            (TOKEN_CONFIG.EXPIRY - TOKEN_CONFIG.REFRESH_BUFFER) * 1000,
           );
         } else {
           handleSessionTimeout();
@@ -186,7 +210,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } finally {
         if (isSubscribed) {
-          setAuthState(prev => ({ ...prev, loading: false }));
+          setAuthState((prev) => ({ ...prev, loading: false }));
         }
       }
     };
@@ -197,147 +221,164 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isSubscribed = false;
       clearInterval(refreshInterval);
     };
-  }, [client, tokenManager, handleSessionTimeout, handleError, refreshTokenWithRetry]);
+  }, [
+    client,
+    tokenManager,
+    handleSessionTimeout,
+    handleError,
+    refreshTokenWithRetry,
+  ]);
 
-  const login = useCallback(async (credentials: AuthCredentials): Promise<AuthResponse> => {
-    try {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      clearError();
-      
-      const response = await client.login(credentials);
-      
-      if (!response.token || !response.refreshToken || !response.user) {
-        throw new Error('Invalid response from server');
-      }
-  
-      const normalizedUser = {
-        ...response.user,
-        email_verified: response.user.email_verified ?? false // Ensure we have a boolean
-      };
-      
-      // Store tokens regardless of verification status
-      tokenManager.setTokens(response.token, response.refreshToken);
-      
-      // Update auth state
-      setAuthState(prev => ({
-        ...prev,
-        user: normalizedUser,
-        isVerified: normalizedUser.email_verified
-      }));
-  
-      // If user is verified, redirect to dashboard
-      if (normalizedUser.email_verified) {
-        const returnTo = searchParams.get('returnTo');
-        router.push(returnTo ? decodeURIComponent(returnTo) : '/dashboard');
-        return {
-          success: true,
-          user: normalizedUser,
-          token: response.token,
-          refreshToken: response.refreshToken,
-        };
-      }
-  
-      // Only return verification required if user is not verified
-      return {
-        success: true,
-        requiresVerification: !normalizedUser.email_verified,
-        email: credentials.email,
-        token: response.token,
-        refreshToken: response.refreshToken,
-        user: normalizedUser
-      };
-      
-    } catch (err) {
-      const error = handleError(err);
-      return { success: false, error: error.message };
-    } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
-    }
-  }, [client, clearError, tokenManager, router, searchParams, handleError]);
+  const login = useCallback(
+    async (credentials: AuthCredentials): Promise<AuthResponse> => {
+      try {
+        setAuthState((prev) => ({ ...prev, loading: true }));
+        clearError();
 
-  const signup = useCallback(async (credentials: SignUpCredentials): Promise<AuthResponse> => {
-    try {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      clearError();
-  
-      const response = await client.signup(credentials);
-  
-      if (response.user && response.token && response.refreshToken) {
+        const response = await client.login(credentials);
+
+        if (!response.token || !response.refreshToken || !response.user) {
+          throw new Error('Invalid response from server');
+        }
+
         const normalizedUser = {
           ...response.user,
-          email_verified: response.user.email_verified
+          email_verified: response.user.email_verified ?? false, // Ensure we have a boolean
         };
-  
+
+        // Store tokens regardless of verification status
         tokenManager.setTokens(response.token, response.refreshToken);
-        setAuthState(prev => ({ ...prev, user: normalizedUser }));
-  
+
+        // Update auth state
+        setAuthState((prev) => ({
+          ...prev,
+          user: normalizedUser,
+          isVerified: normalizedUser.email_verified,
+        }));
+
+        // If user is verified, redirect to dashboard
+        if (normalizedUser.email_verified) {
+          const returnTo = searchParams.get('returnTo');
+          router.push(returnTo ? decodeURIComponent(returnTo) : '/dashboard');
+          return {
+            success: true,
+            user: normalizedUser,
+            token: response.token,
+            refreshToken: response.refreshToken,
+          };
+        }
+
+        // Only return verification required if user is not verified
         return {
           success: true,
-          message: 'Please check your email for verification instructions.',
-          requiresVerification: true,
+          requiresVerification: !normalizedUser.email_verified,
           email: credentials.email,
           token: response.token,
           refreshToken: response.refreshToken,
+          user: normalizedUser,
         };
+      } catch (err) {
+        const error = handleError(err);
+        return { success: false, error: error.message };
+      } finally {
+        setAuthState((prev) => ({ ...prev, loading: false }));
       }
-  
-      throw new Error('Invalid response from server');
-    } catch (err) {
-      const error = handleError(err);
-      return { success: false, error: error.message };
-    } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
-    }
-  }, [client, clearError, handleError, tokenManager]);
+    },
+    [client, clearError, tokenManager, router, searchParams, handleError],
+  );
 
-  const verifyEmail = useCallback(async (code: string): Promise<EmailVerificationResponse> => {
-    try {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      clearError();
+  const signup = useCallback(
+    async (credentials: SignUpCredentials): Promise<AuthResponse> => {
+      try {
+        setAuthState((prev) => ({ ...prev, loading: true }));
+        clearError();
 
-      const { token } = tokenManager.getTokens();
-      if (!token) throw new Error('No authentication token found');
+        const response = await client.signup(credentials);
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VERIFY_EMAIL}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          code,
-          timestamp: new Date().toISOString(),
-          client: 'web',
-          deviceInfo: getDeviceInfo()
-        })
-      });
+        if (response.user && response.token && response.refreshToken) {
+          const normalizedUser = {
+            ...response.user,
+            email_verified: response.user.email_verified,
+          };
 
-      const data = await response.json();
+          tokenManager.setTokens(response.token, response.refreshToken);
+          setAuthState((prev) => ({ ...prev, user: normalizedUser }));
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Verification failed');
+          return {
+            success: true,
+            message: 'Please check your email for verification instructions.',
+            requiresVerification: true,
+            email: credentials.email,
+            token: response.token,
+            refreshToken: response.refreshToken,
+          };
+        }
+
+        throw new Error('Invalid response from server');
+      } catch (err) {
+        const error = handleError(err);
+        return { success: false, error: error.message };
+      } finally {
+        setAuthState((prev) => ({ ...prev, loading: false }));
       }
+    },
+    [client, clearError, handleError, tokenManager],
+  );
 
-      setAuthState(prev => ({ ...prev, isVerified: true }));
-      
-      return {
-        success: true,
-        message: data.message,
-        status: data.status || 'success'
-      };
-    } catch (err) {
-      const error = handleError(err);
-      return {
-        success: false,
-        error: error.message,
-        message: error.message,
-        status: 'error'
-      };
-    } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
-    }
-  }, [clearError, tokenManager, handleError]);
+  const verifyEmail = useCallback(
+    async (code: string): Promise<EmailVerificationResponse> => {
+      try {
+        setAuthState((prev) => ({ ...prev, loading: true }));
+        clearError();
+
+        const { token } = tokenManager.getTokens();
+        if (!token) throw new Error('No authentication token found');
+
+        const response = await fetch(
+          `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VERIFY_EMAIL}`,
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              code,
+              timestamp: new Date().toISOString(),
+              client: 'web',
+              deviceInfo: getDeviceInfo(),
+            }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Verification failed');
+        }
+
+        setAuthState((prev) => ({ ...prev, isVerified: true }));
+
+        return {
+          success: true,
+          message: data.message,
+          status: data.status || 'success',
+        };
+      } catch (err) {
+        const error = handleError(err);
+        return {
+          success: false,
+          error: error.message,
+          message: error.message,
+          status: 'error',
+        };
+      } finally {
+        setAuthState((prev) => ({ ...prev, loading: false }));
+      }
+    },
+    [clearError, tokenManager, handleError],
+  );
 
   const performLogout = useCallback(async (): Promise<void> => {
     try {
@@ -346,11 +387,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await client.logout(token);
       }
       tokenManager.removeTokens();
-      setAuthState(prev => ({
+      setAuthState((prev) => ({
         ...prev,
         user: null,
         isVerified: false,
-        error: null
+        error: null,
       }));
     } catch (err) {
       handleError(err);
@@ -359,24 +400,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(async (): Promise<void> => {
     try {
-      setAuthState(prev => ({ ...prev, isLoggingOut: true }));
-      
+      setAuthState((prev) => ({ ...prev, isLoggingOut: true }));
+
       await performLogout();
-      
+
       // Clear loading state before navigation
-      setAuthState(prev => ({ 
-        ...prev, 
+      setAuthState((prev) => ({
+        ...prev,
         isLoggingOut: false,
         user: null,
         isVerified: false,
-        error: null
+        error: null,
       }));
-  
+
       // Small delay to allow state update before navigation
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       router.push('/signin?reason=logout');
     } catch (err) {
-      setAuthState(prev => ({ ...prev, isLoggingOut: false }));
+      setAuthState((prev) => ({ ...prev, isLoggingOut: false }));
       handleError(err);
       throw err;
     }
@@ -395,7 +436,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       verifyEmail,
       refreshToken: refreshTokenWithRetry,
     }),
-    [authState, login, signup, logout, clearError, verifyEmail, refreshTokenWithRetry]
+    [
+      authState,
+      login,
+      signup,
+      logout,
+      clearError,
+      verifyEmail,
+      refreshTokenWithRetry,
+    ],
   );
 
   return (

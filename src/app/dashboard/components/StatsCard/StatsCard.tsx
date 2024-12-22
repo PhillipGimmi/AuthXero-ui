@@ -29,10 +29,15 @@ interface StatsCardProps {
 const getColorClasses = (color: AuthStats['color']) => ({
   bg: `bg-${color}-500/10`,
   ring: `ring-${color}-500/20`,
-  text: `text-${color}-400`
+  text: `text-${color}-400`,
 });
 
-const StatsCard: React.FC<StatsCardProps> = ({ stat, index, isSelected, onSelect }) => {
+const StatsCard: React.FC<StatsCardProps> = ({
+  stat,
+  index,
+  isSelected,
+  onSelect,
+}) => {
   const colors = getColorClasses(stat.color);
   const Icon = stat.icon;
 
@@ -64,9 +69,11 @@ const StatsCard: React.FC<StatsCardProps> = ({ stat, index, isSelected, onSelect
         ) : (
           <ArrowDown className="w-4 h-4 text-rose-500" />
         )}
-        <span className={`text-sm ${
-          stat.trend === 'up' ? 'text-green-500' : 'text-rose-500'
-        }`}>
+        <span
+          className={`text-sm ${
+            stat.trend === 'up' ? 'text-green-500' : 'text-rose-500'
+          }`}
+        >
           {stat.change}% from last month
         </span>
       </div>
@@ -76,7 +83,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ stat, index, isSelected, onSelect
         className="overflow-hidden mt-4"
       >
         {stat.details?.map((detail: StatDetail, index: number) => (
-          <div 
+          <div
             key={`${stat.label}-detail-${index}`}
             className="flex justify-between items-center mt-2 text-sm text-zinc-400"
           >

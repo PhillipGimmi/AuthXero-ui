@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 import { Noto_Sans_JP } from 'next/font/google';
-import "./globals.css";
-import { Suspense } from "react";
+import './globals.css';
+import { Suspense } from 'react';
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
@@ -11,19 +11,19 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Dash Auth",
-  description: "Simple, secure authentication platform",
-  keywords: ["authentication", "security", "user management", "auth platform"],
-  authors: [{ name: "Dash Auth Team" }],
+  title: 'Dash Auth',
+  description: 'Simple, secure authentication platform',
+  keywords: ['authentication', 'security', 'user management', 'auth platform'],
+  authors: [{ name: 'Dash Auth Team' }],
   openGraph: {
-    title: "Dash Auth",
-    description: "Simple, secure authentication platform",
-    type: "website",
+    title: 'Dash Auth',
+    description: 'Simple, secure authentication platform',
+    type: 'website',
   },
   twitter: {
-    title: "Dash Auth",
-    description: "Simple, secure authentication platform",
-    card: "summary_large_image",
+    title: 'Dash Auth',
+    description: 'Simple, secure authentication platform',
+    card: 'summary_large_image',
   },
 };
 
@@ -44,9 +44,7 @@ export default function RootLayout({
     <html lang="en" className={notoSansJP.variable}>
       <body className="antialiased font-noto-sans-jp bg-zinc-950">
         <AuthProvider>
-          <Suspense fallback={<RootLoading />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={<RootLoading />}>{children}</Suspense>
         </AuthProvider>
       </body>
     </html>

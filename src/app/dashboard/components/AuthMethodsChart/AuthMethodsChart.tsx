@@ -1,6 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
 
 interface AuthMethod {
   id: string;
@@ -46,8 +53,14 @@ const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
 
   const calculateChange = (current: number, previous: number) => {
     const change = ((current - previous) / previous) * 100;
-    if (change > 0) return { symbol: '▲', value: change.toFixed(1), class: 'text-green-400' };
-    if (change < 0) return { symbol: '▼', value: Math.abs(change).toFixed(1), class: 'text-red-400' };
+    if (change > 0)
+      return { symbol: '▲', value: change.toFixed(1), class: 'text-green-400' };
+    if (change < 0)
+      return {
+        symbol: '▼',
+        value: Math.abs(change).toFixed(1),
+        class: 'text-red-400',
+      };
     return { symbol: '→', value: '0.0', class: 'text-white' };
   };
 
@@ -67,7 +80,9 @@ const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
       </motion.div>
       <div className="flex items-center justify-between mt-2">
         <div className="text-sm text-zinc-400">Authentication Rate</div>
-        <div className={`text-sm font-medium ${change.class} flex items-center gap-1`}>
+        <div
+          className={`text-sm font-medium ${change.class} flex items-center gap-1`}
+        >
           <span>{change.symbol}</span>
           <span>{change.value}%</span>
         </div>
@@ -108,7 +123,7 @@ const AuthMethodsChart: React.FC<AuthMethodsChartProps> = ({
         value: Number(method.value.toFixed(1)),
         timeData: generateTimeData(method.value, 5),
       })),
-    [data]
+    [data],
   );
 
   const [selectedMethod, setSelectedMethod] = useState(authMethods[0].id);
@@ -121,8 +136,8 @@ const AuthMethodsChart: React.FC<AuthMethodsChartProps> = ({
     const max = Math.max(...values);
     const padding = (max - min) * 0.2;
     return [
-      Number((Math.max(0, min - padding)).toFixed(1)), 
-      Number((max + padding).toFixed(1))
+      Number(Math.max(0, min - padding).toFixed(1)),
+      Number((max + padding).toFixed(1)),
     ];
   }, [selectedData]);
 

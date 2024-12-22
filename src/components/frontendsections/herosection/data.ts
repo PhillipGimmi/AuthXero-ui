@@ -10,7 +10,11 @@ interface BusinessContext {
 }
 
 export type BusinessContexts = {
-  [key in 'enterprise' | 'healthcare' | 'ecommerce' | 'workforce']: BusinessContext;
+  [key in
+    | 'enterprise'
+    | 'healthcare'
+    | 'ecommerce'
+    | 'workforce']: BusinessContext;
 };
 
 export const businessContexts: BusinessContexts = {

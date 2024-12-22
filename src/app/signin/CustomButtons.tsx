@@ -1,7 +1,6 @@
 // src/app/signin/CustomButtons.tsx
 'use client';
 
-
 import React, { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,36 +10,33 @@ type ButtonProps = {
   variant?: 'primary' | 'secondary';
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
-export const SplashButton: React.FC<ButtonProps> = ({ 
-  children, 
+export const SplashButton: React.FC<ButtonProps> = ({
+  children,
   className,
   variant = 'primary',
-  ...rest 
+  ...rest
 }) => (
   <button
     className={twMerge(
-      "shimmer-button relative group inline-flex items-center justify-center",
-      variant === 'primary' ? 
-        "bg-gradient-to-br from-baby-blue-400 to-baby-blue-600" : 
-        "bg-gradient-to-br from-zinc-400 to-zinc-700",
-      className
+      'shimmer-button relative group inline-flex items-center justify-center',
+      variant === 'primary'
+        ? 'bg-gradient-to-br from-baby-blue-400 to-baby-blue-600'
+        : 'bg-gradient-to-br from-zinc-400 to-zinc-700',
+      className,
     )}
     {...rest}
   >
-    <span className="text relative z-10">
-      {children}
-    </span>
+    <span className="text relative z-10">{children}</span>
     <span className="shimmer" aria-hidden="true"></span>
   </button>
 );
 
-
 // BubbleButton component as previously implemented
-export const BubbleButton: React.FC<ButtonProps> = ({ 
-  children, 
+export const BubbleButton: React.FC<ButtonProps> = ({
+  children,
   className,
   variant = 'primary',
-  ...rest 
+  ...rest
 }) => {
   const baseStyles = `
     relative z-0 
@@ -85,16 +81,12 @@ export const BubbleButton: React.FC<ButtonProps> = ({
       hover:text-zinc-50
       focus:ring-zinc-200
       focus:ring-offset-zinc-100
-    `
+    `,
   };
 
   return (
     <button
-      className={twMerge(
-        baseStyles,
-        variants[variant],
-        className
-      )}
+      className={twMerge(baseStyles, variants[variant], className)}
       {...rest}
     >
       {children}
@@ -103,18 +95,12 @@ export const BubbleButton: React.FC<ButtonProps> = ({
 };
 
 // ButtonGroup for managing groups of buttons
-export const ButtonGroup = ({ 
+export const ButtonGroup = ({
   children,
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div 
-    className={twMerge(
-      "flex gap-2 items-center",
-      className
-    )}
-    {...props}
-  >
+  <div className={twMerge('flex gap-2 items-center', className)} {...props}>
     {children}
   </div>
 );

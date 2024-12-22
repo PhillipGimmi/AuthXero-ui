@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_AUTHXERO_URL ?? 'http://localhost:8080',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',  
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, X-Refresh-Token, X-Request-ID',
+  'Access-Control-Allow-Origin':
+    process.env.NEXT_PUBLIC_AUTHXERO_URL ?? 'http://localhost:8080',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, X-Requested-With, Accept, X-Refresh-Token, X-Request-ID',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Expose-Headers': 'Content-Length, Content-Type, X-Request-ID',
   'Access-Control-Max-Age': '86400',
@@ -12,16 +14,20 @@ const corsHeaders = {
 
 const securityHeaders = {
   'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff', 
+  'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-XSS-Protection': '1; mode=block',
   'X-DNS-Prefetch-Control': 'off',
-  'Content-Security-Policy': "default-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+  'Content-Security-Policy':
+    "default-src 'self' http://localhost:8080; connect-src 'self' http://localhost:8080; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
 };
 
 function addHeaders(response: NextResponse, headers: Record<string, string>) {
-  Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
+  Object.entries(headers).forEach(([key, value]) =>
+    response.headers.set(key, value),
+  );
 }
 
 export function middleware(request: NextRequest) {
@@ -52,7 +58,7 @@ export function middleware(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     response.headers.set(
       'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains; preload'
+      'max-age=31536000; includeSubDomains; preload',
     );
   }
 
@@ -60,8 +66,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/api/:path*',
-    '/((?!_next|favicon.ico|public|assets|images).*)',
-  ],
+  matcher: ['/api/:path*', '/((?!_next|favicon.ico|public|assets|images).*)'],
 };

@@ -1,6 +1,5 @@
 // types.ts
 
-
 export type PlatformId = 'spa' | 'website' | 'android' | 'ios';
 
 export interface SetupDefaults {
@@ -11,7 +10,7 @@ export interface SetupDefaults {
 }
 
 export interface SetupOption {
-  id: PlatformId;  // Using the PlatformId type instead of inline union
+  id: PlatformId; // Using the PlatformId type instead of inline union
   title: string;
   icon: React.ElementType;
   description: string;
@@ -33,7 +32,7 @@ export type PlatformConfig = {
     setupInstructions: string;
     requiredDependencies: string[];
     configurationSteps: string[];
-  }
+  };
 };
 
 export interface AuthConfig {

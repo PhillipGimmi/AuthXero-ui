@@ -31,7 +31,8 @@ export function Stars({ number = 500 }: StarProps) {
       const initialOpacity = 0.5 + Math.random() * 0.3; // Random base opacity
 
       const size = STAR_SIZES[Math.floor(Math.random() * STAR_SIZES.length)];
-      const color = NIGHT_SKY_COLORS[Math.floor(Math.random() * NIGHT_SKY_COLORS.length)];
+      const color =
+        NIGHT_SKY_COLORS[Math.floor(Math.random() * NIGHT_SKY_COLORS.length)];
 
       // Apply styles with unique animation
       Object.assign(star.style, {
@@ -44,8 +45,8 @@ export function Stars({ number = 500 }: StarProps) {
         animation: `flicker ${flickerDuration}s ease-in-out infinite`,
         animationDelay: `${flickerDelay}s`,
         ...(size > 2 && {
-          boxShadow: `0 0 6px 1px ${color}`
-        })
+          boxShadow: `0 0 6px 1px ${color}`,
+        }),
       });
 
       container.appendChild(star);

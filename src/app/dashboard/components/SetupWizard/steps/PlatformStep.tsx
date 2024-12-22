@@ -1,13 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Search, ChevronDown, ChevronUp, ChevronLeft, X, ChevronRight } from 'lucide-react';
+import {
+  ArrowRight,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  X,
+  ChevronRight,
+} from 'lucide-react';
 import { SETUP_OPTIONS } from '../constants';
 import type { SetupOption, MousePosition } from '../types';
-import { FAQ_ITEMS } from './faqData';
+import { FAQ_ITEMS } from '../faqData';
 
 interface PlatformStepProps {
   mousePositions: Record<string, MousePosition>;
-  setMousePositions: React.Dispatch<React.SetStateAction<Record<string, MousePosition>>>;
+  setMousePositions: React.Dispatch<
+    React.SetStateAction<Record<string, MousePosition>>
+  >;
   selectedOption: SetupOption['id'] | null;
   onSelect: (optionId: SetupOption['id']) => void;
   onBack: () => void;
@@ -33,7 +43,10 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
     setHasLoaded(true);
   }, []);
 
-  const handleMouseMove = (optionId: SetupOption['id'], e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleMouseMove = (
+    optionId: SetupOption['id'],
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setMousePositions((prev) => ({
       ...prev,
@@ -58,14 +71,14 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
 
   const toggleFAQ = (index: number) => {
     setExpandedFAQs((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
   const filteredFAQs = FAQ_ITEMS.filter(
     (item) =>
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some((tag) => tag.includes(searchQuery.toLowerCase()))
+      item.tags.some((tag) => tag.includes(searchQuery.toLowerCase())),
   );
 
   return (
@@ -73,7 +86,7 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
-          animate={hasLoaded ? "visible" : "hidden"}
+          animate={hasLoaded ? 'visible' : 'hidden'}
           variants={{
             hidden: { opacity: 0 },
             visible: {
@@ -127,7 +140,7 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
               onClick={() => setShowFAQ(!showFAQ)}
               className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
             >
-              <span>FAQ</span>
+              <span>Help</span>
               <motion.div
                 animate={{ rotate: showFAQ ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
@@ -181,7 +194,9 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                     </div>
                     <div className="text-left flex-1">
                       <h3 className="font-semibold text-lg">{option.title}</h3>
-                      <p className="text-zinc-400 text-sm mt-1">{option.description}</p>
+                      <p className="text-zinc-400 text-sm mt-1">
+                        {option.description}
+                      </p>
                     </div>
                     <ArrowRight
                       className={`w-5 h-5 transition-transform ${
@@ -200,11 +215,11 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                       style={{
                         background: `
                           radial-gradient(400px circle at ${mousePosition?.x ?? 0}px ${
-                          mousePosition?.y ?? 0
-                        }px, rgba(59, 130, 246, 0.1), transparent 40%),
+                            mousePosition?.y ?? 0
+                          }px, rgba(59, 130, 246, 0.1), transparent 40%),
                           radial-gradient(800px circle at ${mousePosition?.x ?? 0}px ${
-                          mousePosition?.y ?? 0
-                        }px, rgba(59, 130, 246, 0.05), transparent 40%)
+                            mousePosition?.y ?? 0
+                          }px, rgba(59, 130, 246, 0.05), transparent 40%)
                         `,
                       }}
                     />
@@ -245,7 +260,9 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                 }}
                 className="flex items-center justify-between"
               >
-                <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+                <h2 className="text-xl font-bold text-white">
+                  Which do you choose
+                </h2>
                 <button
                   onClick={() => setShowFAQ(false)}
                   className="p-2 text-zinc-400 hover:text-white transition-colors"
@@ -260,7 +277,8 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                 }}
                 className="text-m font-bold text-center text-white"
               >
-                Type your language, library or framework in search to narrow down options
+                Type your language, library or framework in search to narrow
+                down options
               </motion.p>
               <motion.div
                 variants={{
@@ -272,7 +290,7 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search FAQ..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500"
@@ -299,7 +317,9 @@ export const PlatformStep: React.FC<PlatformStepProps> = ({
                       onClick={() => toggleFAQ(index)}
                       className="w-full p-4 text-left flex justify-between items-center hover:bg-zinc-800/50 transition-colors"
                     >
-                      <h3 className="font-semibold text-white">{faq.question}</h3>
+                      <h3 className="font-semibold text-white">
+                        {faq.question}
+                      </h3>
                       {expandedFAQs.includes(index) ? (
                         <ChevronUp className="w-4 h-4 text-zinc-400" />
                       ) : (

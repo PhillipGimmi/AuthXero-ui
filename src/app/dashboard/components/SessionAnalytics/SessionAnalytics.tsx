@@ -2,8 +2,14 @@
 
 import React from 'react';
 import {
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
 
 interface SessionData {
@@ -17,7 +23,7 @@ interface SessionAnalyticsProps {
 }
 
 const COLORS = {
-  blue: '#3B82F6',   // Tailwind blue-500
+  blue: '#3B82F6', // Tailwind blue-500
   purple: '#8B5CF6', // Tailwind violet-500
 } as const;
 
@@ -33,7 +39,7 @@ const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ data }) => (
           contentStyle={{
             backgroundColor: '#1F2937',
             border: '1px solid #374151',
-            borderRadius: '0.5rem'
+            borderRadius: '0.5rem',
           }}
         />
         <Area

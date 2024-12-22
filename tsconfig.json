@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,14 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
-    "typeRoots": [
-      "./types",
-      "node_modules/@types"
-    ],
+    "typeRoots": ["./types", "node_modules/@types"],
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true
   },
@@ -40,11 +31,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/components/HeroImageText/index.jsx",
-    "./types/**/*.d.ts"
-, "src/components/frontendsections/herosection/index.tsx", "src/app/dashboard/components/MetricsSection.jsx", "src/components/frontendsections/herosection/AnimatedBackground.tsx"  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+    "./types/**/*.d.ts",
+    "src/components/frontendsections/herosection/index.tsx",
+    "src/app/dashboard/components/MetricsSection.jsx",
+    "src/components/frontendsections/herosection/AnimatedBackground.tsx"
+  ],
+  "exclude": ["node_modules", "dist", "build"]
 }

@@ -1,35 +1,35 @@
-import React, { useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 const BubbleTextSubtitle = ({ text }: { text: string }) => {
   useEffect(() => {
-    const spans = document.querySelectorAll(".hover-text span");
+    const spans = document.querySelectorAll('.hover-text span');
 
     spans.forEach((span) => {
       if (span instanceof HTMLSpanElement) {
-        span.addEventListener("mouseenter", () => {
-          span.classList.add("text-white"); // No font-weight adjustments
+        span.addEventListener('mouseenter', () => {
+          span.classList.add('text-white'); // No font-weight adjustments
           const leftNeighbor = span.previousElementSibling;
           const rightNeighbor = span.nextElementSibling;
 
           if (leftNeighbor instanceof HTMLSpanElement) {
-            leftNeighbor.classList.add("text-gray-300");
+            leftNeighbor.classList.add('text-gray-300');
           }
           if (rightNeighbor instanceof HTMLSpanElement) {
-            rightNeighbor.classList.add("text-gray-300");
+            rightNeighbor.classList.add('text-gray-300');
           }
         });
 
-        span.addEventListener("mouseleave", () => {
-          span.classList.remove("text-white");
+        span.addEventListener('mouseleave', () => {
+          span.classList.remove('text-white');
           const leftNeighbor = span.previousElementSibling;
           const rightNeighbor = span.nextElementSibling;
 
           if (leftNeighbor instanceof HTMLSpanElement) {
-            leftNeighbor.classList.remove("text-gray-300");
+            leftNeighbor.classList.remove('text-gray-300');
           }
           if (rightNeighbor instanceof HTMLSpanElement) {
-            rightNeighbor.classList.remove("text-gray-300");
+            rightNeighbor.classList.remove('text-gray-300');
           }
         });
       }
@@ -54,10 +54,10 @@ const BubbleTextSubtitle = ({ text }: { text: string }) => {
 const BubbleText = ({ children }: { children: string }) => {
   return (
     <>
-      {children.split("").map((char, idx) => (
+      {children.split('').map((char, idx) => (
         <span
           style={{
-            transition: "0.35s color", // Removed font-weight transition
+            transition: '0.35s color', // Removed font-weight transition
           }}
           key={idx}
         >

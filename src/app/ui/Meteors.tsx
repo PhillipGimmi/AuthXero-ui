@@ -49,25 +49,25 @@ export function Meteors({ number = 20 }: { readonly number?: number }) {
 
     const createMeteor = () => {
       const meteorWrapper = document.createElement('div');
-      
+
       const speed = Math.random();
       const isSlowMeteor = speed < 0.3;
       const isVeryThin = Math.random() < 0.4;
-      
+
       meteorWrapper.classList.add('absolute', 'animate-meteor');
 
       const meteorHead = document.createElement('div');
       const meteorTail = document.createElement('div');
-      
+
       const meteorHeight = isVeryThin ? '0.5px' : '1px';
       meteorWrapper.style.height = meteorHeight;
 
       meteorHead.classList.add('absolute', 'right-0');
       meteorTail.classList.add('absolute');
-      
+
       const headWidth = isVeryThin ? '8px' : '15px';
       const tailWidth = isVeryThin ? '60px' : '85px';
-      
+
       meteorHead.style.width = headWidth;
       meteorHead.style.height = meteorHeight;
       meteorTail.style.width = tailWidth;
@@ -76,9 +76,11 @@ export function Meteors({ number = 20 }: { readonly number?: number }) {
 
       const headOpacity = isVeryThin ? 0.7 : 1;
       const tailOpacity = isVeryThin ? 0.3 : 0.4;
-      
+
       meteorHead.style.background = `linear-gradient(to right, transparent, rgba(255,255,255,${headOpacity}))`;
-      meteorHead.style.boxShadow = isVeryThin ? 'none' : '0 0 0 1px rgba(255,255,255,0.4)';
+      meteorHead.style.boxShadow = isVeryThin
+        ? 'none'
+        : '0 0 0 1px rgba(255,255,255,0.4)';
       meteorTail.style.background = `linear-gradient(to right, transparent, rgba(255,255,255,${tailOpacity}))`;
 
       meteorWrapper.appendChild(meteorTail);
@@ -86,10 +88,15 @@ export function Meteors({ number = 20 }: { readonly number?: number }) {
 
       meteorWrapper.style.top = `-${Math.random() * 100}px`;
       meteorWrapper.style.left = `${Math.random() * 100}vw`;
-      
-      const duration = isSlowMeteor ? 2.5 + Math.random() * 1.5 : 1 + Math.random() * 0.8;
-      
-      meteorWrapper.style.setProperty('--travel-distance', `${Math.floor(Math.random() * 50 + 150)}vh`);
+
+      const duration = isSlowMeteor
+        ? 2.5 + Math.random() * 1.5
+        : 1 + Math.random() * 0.8;
+
+      meteorWrapper.style.setProperty(
+        '--travel-distance',
+        `${Math.floor(Math.random() * 50 + 150)}vh`,
+      );
       meteorWrapper.style.setProperty('--duration', `${duration}s`);
       meteorWrapper.style.setProperty('--delay', `${Math.random() * 2}s`);
       meteorWrapper.style.opacity = isVeryThin ? '0.8' : '1';

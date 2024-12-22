@@ -1,4 +1,10 @@
-import type { TimeData, LocationData, AuthMethod, SecurityIncident, SessionData } from '../types';
+import type {
+  TimeData,
+  LocationData,
+  AuthMethod,
+  SecurityIncident,
+  SessionData,
+} from '../types';
 
 export const COLORS = {
   blue: '#3B82F6',
@@ -22,11 +28,41 @@ export const MOCK_DATA = {
   ] satisfies TimeData[],
 
   locationData: [
-    { country: 'USA', users: 1200, failedAttempts: 45, avgResponseTime: 42, mfaAdoption: 85 },
-    { country: 'UK', users: 850, failedAttempts: 28, avgResponseTime: 38, mfaAdoption: 78 },
-    { country: 'Germany', users: 750, failedAttempts: 22, avgResponseTime: 40, mfaAdoption: 92 },
-    { country: 'Japan', users: 650, failedAttempts: 18, avgResponseTime: 45, mfaAdoption: 95 },
-    { country: 'Canada', users: 550, failedAttempts: 15, avgResponseTime: 37, mfaAdoption: 88 },
+    {
+      country: 'USA',
+      users: 1200,
+      failedAttempts: 45,
+      avgResponseTime: 42,
+      mfaAdoption: 85,
+    },
+    {
+      country: 'UK',
+      users: 850,
+      failedAttempts: 28,
+      avgResponseTime: 38,
+      mfaAdoption: 78,
+    },
+    {
+      country: 'Germany',
+      users: 750,
+      failedAttempts: 22,
+      avgResponseTime: 40,
+      mfaAdoption: 92,
+    },
+    {
+      country: 'Japan',
+      users: 650,
+      failedAttempts: 18,
+      avgResponseTime: 45,
+      mfaAdoption: 95,
+    },
+    {
+      country: 'Canada',
+      users: 550,
+      failedAttempts: 15,
+      avgResponseTime: 37,
+      mfaAdoption: 88,
+    },
   ] satisfies LocationData[],
 
   authMethods: [
@@ -51,5 +87,5 @@ export const MOCK_DATA = {
     { time: '12:00', active: 4500, average: 25 },
     { time: '16:00', active: 4100, average: 21 },
     { time: '20:00', active: 2800, average: 19 },
-  ] satisfies SessionData[]
+  ] satisfies SessionData[],
 };

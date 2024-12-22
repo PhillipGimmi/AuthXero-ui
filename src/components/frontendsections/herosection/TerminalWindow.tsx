@@ -40,7 +40,7 @@ const TerminalWindow = ({ messages, onComplete }: TerminalWindowProps) => {
     const timeoutId = setTimeout(() => {
       const interval = setInterval(() => {
         if (!isPausedRef.current) {
-          setVisibleLines(prev => {
+          setVisibleLines((prev) => {
             if (prev < messages.length) {
               return prev + 1;
             }
@@ -85,13 +85,19 @@ const TerminalWindow = ({ messages, onComplete }: TerminalWindowProps) => {
 
   const handleCommand = (cmd: string) => {
     const trimmedCmd = cmd.trim().toLowerCase();
-    const command = commands.find(c => c.name === trimmedCmd);
-    
+    const command = commands.find((c) => c.name === trimmedCmd);
+
     if (terminalContentRef.current) {
       lastScrollPositionRef.current = terminalContentRef.current.scrollTop;
     }
-    
-    setCommandHistory(prev => [...prev, `> ${cmd}`, command ? command.action() : 'Command not found. Type "help" for available commands.']);
+
+    setCommandHistory((prev) => [
+      ...prev,
+      `> ${cmd}`,
+      command
+        ? command.action()
+        : 'Command not found. Type "help" for available commands.',
+    ]);
     setInputValue('');
   };
 
@@ -109,21 +115,21 @@ const TerminalWindow = ({ messages, onComplete }: TerminalWindowProps) => {
     >
       <div className="flex items-center px-4 py-3 bg-gray-800/90 border-b border-gray-700/50 flex-shrink-0">
         <div className="flex gap-2">
-          <motion.div 
+          <motion.div
             className="w-3.5 h-3.5 rounded-full bg-gray-400/90 cursor-pointer group relative"
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
           >
             <X className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-opacity absolute inset-0" />
           </motion.div>
-          <motion.div 
+          <motion.div
             className="w-3.5 h-3.5 rounded-full bg-gray-500/90 cursor-pointer group relative"
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
           >
             <Minus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-opacity absolute inset-0" />
           </motion.div>
-          <motion.div 
+          <motion.div
             className="w-3.5 h-3.5 rounded-full bg-gray-600/90 cursor-pointer group relative"
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
@@ -132,24 +138,26 @@ const TerminalWindow = ({ messages, onComplete }: TerminalWindowProps) => {
           </motion.div>
         </div>
         <span className="ml-4 text-lg text-gray-200 font-mono font-medium">
-            <span className="hidden sm:inline">dash-auth-terminal</span>
-            <span className="inline sm:hidden">terminal</span>
+          <span className="hidden sm:inline">dash-auth-terminal</span>
+          <span className="inline sm:hidden">terminal</span>
         </span>
       </div>
 
-      <div 
+      <div
         ref={terminalContentRef}
         onScroll={handleScroll}
         className="p-6 font-mono text-base overflow-y-auto flex-1 space-y-2 scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50 transition-colors [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-gray-800/50 [&::-webkit-scrollbar-thumb]:bg-gray-600/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:rounded-full"
       >
         <AnimatePresence>
-          {messages?.slice(0, visibleLines).map((message, index) => (
-            <TerminalLine
-              key={`msg-${message}-${index}`}
-              text={message}
-              index={index}
-            />
-          ))}
+          {messages
+            ?.slice(0, visibleLines)
+            .map((message, index) => (
+              <TerminalLine
+                key={`msg-${message}-${index}`}
+                text={message}
+                index={index}
+              />
+            ))}
         </AnimatePresence>
 
         <AnimatePresence>

@@ -3,7 +3,7 @@
 import { COMMON_EMAIL_PROVIDERS } from './constants';
 import { PlatformId, SetupDefaults } from './types';
 
-type EmailProvider = typeof COMMON_EMAIL_PROVIDERS[number];
+type EmailProvider = (typeof COMMON_EMAIL_PROVIDERS)[number];
 
 const isCommonEmailProvider = (domain: string): domain is EmailProvider => {
   return COMMON_EMAIL_PROVIDERS.includes(domain as EmailProvider);
@@ -12,7 +12,7 @@ const isCommonEmailProvider = (domain: string): domain is EmailProvider => {
 export const extractDomain = (email: string): string => {
   const domain = email?.split('@')?.[1];
   if (!domain) return '';
-  
+
   return isCommonEmailProvider(domain.toLowerCase()) ? '' : domain;
 };
 
@@ -21,7 +21,7 @@ export const generateSecureDefaults = (domain: string): SetupDefaults => {
     clientId: `authxero_${Math.random().toString(36).slice(2)}_${Date.now()}`,
     redirectUrl: `https://${domain}/auth/callback`,
     configVersion: '1.0.0',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 };
 
@@ -31,7 +31,7 @@ type CodeSnippets = {
 
 export const getCodeSnippet = (optionId: PlatformId, domain: string) => {
   const defaults = generateSecureDefaults(domain);
-  
+
   const snippets: CodeSnippets = {
     spa: `
 // Install the package
@@ -295,11 +295,11 @@ struct AuthButton: View {
             }
         }
     }
-}`
+}`,
   };
 
   return {
     code: snippets[optionId],
-    defaults
+    defaults,
   };
 };

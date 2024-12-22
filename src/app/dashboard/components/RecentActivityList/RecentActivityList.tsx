@@ -23,23 +23,27 @@ const getStatusStyles = (status: RecentActivity['status']) => {
   const styles = {
     success: {
       background: 'bg-green-500/10',
-      text: 'text-green-400'
+      text: 'text-green-400',
     },
     warning: {
       background: 'bg-yellow-500/10',
-      text: 'text-yellow-400'
+      text: 'text-yellow-400',
     },
     error: {
       background: 'bg-zinc-800',
-      text: 'text-blue-400'
-    }
+      text: 'text-blue-400',
+    },
   };
 
   return styles[status] || styles.error;
 };
 
-const RecentActivityList: React.FC<RecentActivityListProps> = ({ activities }) => (
-  <div className={`flex flex-col space-y-4 max-h-[503px] overflow-y-auto p-4 ${styles.hideScrollbar}`}>
+const RecentActivityList: React.FC<RecentActivityListProps> = ({
+  activities,
+}) => (
+  <div
+    className={`flex flex-col space-y-4 max-h-[503px] overflow-y-auto p-4 ${styles.hideScrollbar}`}
+  >
     {activities.map((activity, index) => {
       const statusStyles = getStatusStyles(activity.status);
       const ActivityIcon = activity.icon;

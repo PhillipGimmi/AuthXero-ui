@@ -28,15 +28,15 @@ class Renderer implements RendererProps {
   constructor(canvas: HTMLCanvasElement, scale: number) {
     this.canvas = canvas;
     this.scale = scale;
-    
+
     const gl = canvas.getContext('webgl2', {
       alpha: true,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
     });
     if (!gl) throw new Error('WebGL2 not supported');
     this.gl = gl;
-    
+
     this.gl.viewport(0, 0, canvas.width * scale, canvas.height * scale);
     this.setup();
     this.init();
@@ -45,7 +45,7 @@ class Renderer implements RendererProps {
   private setup(): void {
     this.vs = this.gl.createShader(this.gl.VERTEX_SHADER);
     this.fs = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    
+
     if (!this.vs || !this.fs) throw new Error('Failed to create shaders');
 
     const vertexShader = `#version 300 es
@@ -71,9 +71,15 @@ class Renderer implements RendererProps {
     }
 
     // Cache uniform locations after program is linked
-    this.cachedResolutionLocation = this.gl.getUniformLocation(this.program, "resolution");
-    this.cachedTimeLocation = this.gl.getUniformLocation(this.program, "time");
-    this.cachedPositionLocation = this.gl.getAttribLocation(this.program, "position");
+    this.cachedResolutionLocation = this.gl.getUniformLocation(
+      this.program,
+      'resolution',
+    );
+    this.cachedTimeLocation = this.gl.getUniformLocation(this.program, 'time');
+    this.cachedPositionLocation = this.gl.getAttribLocation(
+      this.program,
+      'position',
+    );
   }
 
   private compileShader(shader: WebGLShader, source: string): void {
@@ -96,12 +102,24 @@ class Renderer implements RendererProps {
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
     this.gl.enableVertexAttribArray(this.cachedPositionLocation);
-    this.gl.vertexAttribPointer(this.cachedPositionLocation, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(
+      this.cachedPositionLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      0,
+      0,
+    );
   }
 
   updateScale(scale: number): void {
     this.scale = scale;
-    this.gl.viewport(0, 0, this.canvas.width * this.scale, this.canvas.height * this.scale);
+    this.gl.viewport(
+      0,
+      0,
+      this.canvas.width * this.scale,
+      this.canvas.height * this.scale,
+    );
   }
 
   render(now: number): void {
@@ -110,12 +128,16 @@ class Renderer implements RendererProps {
     this.gl.clearColor(0.1, 0.1, 0.2, 1); // Keep background dark shade
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     this.gl.useProgram(this.program);
-    
+
     if (this.buffer) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
     }
-    
-    this.gl.uniform2f(this.cachedResolutionLocation, this.canvas.width, this.canvas.height);
+
+    this.gl.uniform2f(
+      this.cachedResolutionLocation,
+      this.canvas.width,
+      this.canvas.height,
+    );
     this.gl.uniform1f(this.cachedTimeLocation, now * 0.001);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
   }
@@ -275,7 +297,7 @@ const AnimatedBackground: React.FC = () => {
 
     const resize = () => {
       if (!canvas) return;
-      
+
       // Debounce resize operations
       window.clearTimeout(resizeTimeoutRef.current);
       resizeTimeoutRef.current = window.setTimeout(() => {
@@ -314,7 +336,7 @@ const AnimatedBackground: React.FC = () => {
         left: 0,
         width: '100%',
         height: '100%',
-        zIndex: -1
+        zIndex: -1,
       }}
     />
   );

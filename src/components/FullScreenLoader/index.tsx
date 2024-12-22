@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 const SpinnerAnimation = () => {
   const TOTAL_PARTICLES = 100;
   const particles = Array.from(
-    { length: TOTAL_PARTICLES }, 
-    (_, index) => `particle-${index.toString().padStart(3, '0')}`
+    { length: TOTAL_PARTICLES },
+    (_, index) => `particle-${index.toString().padStart(3, '0')}`,
   );
-  
+
   const generateStyles = () => {
-    const particleStyles = particles.map((_, index) => `
+    const particleStyles = particles
+      .map(
+        (_, index) => `
       .particle:nth-child(${index + 1}) {
         transform: rotate(${(index / TOTAL_PARTICLES) * 360}deg) translate3d(100px, 0, 0);
       }
@@ -17,7 +19,9 @@ const SpinnerAnimation = () => {
       .particle:nth-child(${index + 1}) b {
         animation-delay: ${index * (3 / (TOTAL_PARTICLES - 2))}s;
       }
-    `).join('\n');
+    `,
+      )
+      .join('\n');
 
     return `
       .spinner {
@@ -75,7 +79,7 @@ const SpinnerAnimation = () => {
       }
     `;
   };
-  
+
   return (
     <>
       <style>{generateStyles()}</style>
@@ -91,27 +95,27 @@ const SpinnerAnimation = () => {
 };
 
 export const LoadingOverlay = () => {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 bg-zinc-950 backdrop-blur-md z-[9999] flex items-center justify-center"
-      >
-        <div className="flex flex-col items-center gap-8">
-          <div className="w-64 h-64 flex items-center justify-center">
-            <SpinnerAnimation />
-          </div>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-400 font-medium"
-          >
-            Signing out...
-          </motion.p>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 bg-zinc-950 backdrop-blur-md z-[9999] flex items-center justify-center"
+    >
+      <div className="flex flex-col items-center gap-8">
+        <div className="w-64 h-64 flex items-center justify-center">
+          <SpinnerAnimation />
         </div>
-      </motion.div>
-    );
-  };
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-zinc-400 font-medium"
+        >
+          Signing out...
+        </motion.p>
+      </div>
+    </motion.div>
+  );
+};
 
 export default LoadingOverlay;

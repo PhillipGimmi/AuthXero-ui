@@ -7,7 +7,11 @@ interface TooltipSectionProps {
   isVisible: boolean;
 }
 
-const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosition, isVisible }) => {
+const TooltipSection: React.FC<TooltipSectionProps> = ({
+  tooltipText,
+  mousePosition,
+  isVisible,
+}) => {
   if (!isVisible) return null;
 
   const CURSOR_OFFSET = 8;
@@ -17,17 +21,25 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
 
   const getColoredText = (text: string) => {
     if (text.includes('▲')) {
-      return text.split(' ').map((word, index) => 
-        word.includes('▲') || !isNaN(parseFloat(word)) ? 
-          <span key={index} className="text-green-400">{word} </span> : 
+      return text.split(' ').map((word, index) =>
+        word.includes('▲') || !isNaN(parseFloat(word)) ? (
+          <span key={index} className="text-green-400">
+            {word}{' '}
+          </span>
+        ) : (
           <span key={index}>{word} </span>
+        ),
       );
     }
     if (text.includes('▼')) {
-      return text.split(' ').map((word, index) => 
-        word.includes('▼') || !isNaN(parseFloat(word)) ? 
-          <span key={index} className="text-red-400">{word} </span> : 
+      return text.split(' ').map((word, index) =>
+        word.includes('▼') || !isNaN(parseFloat(word)) ? (
+          <span key={index} className="text-red-400">
+            {word}{' '}
+          </span>
+        ) : (
           <span key={index}>{word} </span>
+        ),
       );
     }
     return text;
@@ -47,7 +59,7 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const simplifiedText = simplifyText(tooltipText);
-    
+
     const temp = document.createElement('div');
     temp.style.position = 'absolute';
     temp.style.visibility = 'hidden';
@@ -55,7 +67,7 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     temp.style.padding = '10px 12px';
     temp.innerText = simplifiedText;
     document.body.appendChild(temp);
-    
+
     const tooltipWidth = Math.min(temp.offsetWidth, DEFAULT_WIDTH);
     const tooltipHeight = temp.offsetHeight || DEFAULT_HEIGHT;
     document.body.removeChild(temp);
@@ -109,7 +121,7 @@ const TooltipSection: React.FC<TooltipSectionProps> = ({ tooltipText, mousePosit
     <div style={tooltipStyles}>
       {shouldColorCode ? getColoredText(content) : content}
     </div>,
-    document.body
+    document.body,
   );
 };
 

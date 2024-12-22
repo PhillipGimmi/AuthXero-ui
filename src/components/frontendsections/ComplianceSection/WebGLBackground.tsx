@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useRef } from 'react';
 
@@ -193,7 +193,8 @@ void main() {
       pointer.y += (pointer.tY - pointer.y) * 0.1;
 
       const rect = canvas.getBoundingClientRect();
-      const scrollProgress = (window.scrollY - rect.top) / (window.innerHeight * 2);
+      const scrollProgress =
+        (window.scrollY - rect.top) / (window.innerHeight * 2);
 
       if (uniformsRef.current.u_time) {
         gl.uniform1f(uniformsRef.current.u_time, performance.now());
@@ -202,11 +203,14 @@ void main() {
         gl.uniform2f(
           uniformsRef.current.u_pointer_position,
           pointer.x / rect.width,
-          1 - pointer.y / rect.height
+          1 - pointer.y / rect.height,
         );
       }
       if (uniformsRef.current.u_pointer_active) {
-        gl.uniform1f(uniformsRef.current.u_pointer_active, pointer.active ? 1.0 : 0.0);
+        gl.uniform1f(
+          uniformsRef.current.u_pointer_active,
+          pointer.active ? 1.0 : 0.0,
+        );
       }
       if (uniformsRef.current.u_scroll_progress) {
         gl.uniform1f(uniformsRef.current.u_scroll_progress, scrollProgress);

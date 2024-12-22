@@ -1,24 +1,24 @@
 export interface Command {
-    name: string;
-    description: string;
-    action: () => string;
-  }
-  
-  export const initialMessages = [
-    'Welcome to DashAuth Terminal',
-    'Initializing secure connection...',
-    'Verifying environment...',
-    'Loading security protocols...',
-    'Establishing encrypted channel...',
-    'Connection established',
-    'Type "help" to see available commands.'
-  ];
-  
-  export const commands: Command[] = [
-    {
-      name: 'help',
-      description: 'Show available commands',
-      action: () => `Available Commands:
+  name: string;
+  description: string;
+  action: () => string;
+}
+
+export const initialMessages = [
+  'Welcome to DashAuth Terminal',
+  'Initializing secure connection...',
+  'Verifying environment...',
+  'Loading security protocols...',
+  'Establishing encrypted channel...',
+  'Connection established',
+  'Type "help" to see available commands.',
+];
+
+export const commands: Command[] = [
+  {
+    name: 'help',
+    description: 'Show available commands',
+    action: () => `Available Commands:
   -------------------
   Authentication
     auth         - Authentication system overview
@@ -73,12 +73,12 @@ export interface Command {
     version      - Version info
     changelog    - Recent updates
   
-  Type any command for detailed information.`
-    },
-    {
-      name: 'auth',
-      description: 'Authentication overview',
-      action: () => `Authentication System Overview
+  Type any command for detailed information.`,
+  },
+  {
+    name: 'auth',
+    description: 'Authentication overview',
+    action: () => `Authentication System Overview
   ---------------------------
   Core Features:
   • JWT-based authentication
@@ -109,12 +109,12 @@ export interface Command {
   • "oauth" - OAuth2 details
   • "session" - Session management
   • "tokens" - Token handling
-  • "mfa" - Multi-factor auth`
-    },
-    {
-      name: 'security',
-      description: 'Security features',
-      action: () => `Security Features Overview
+  • "mfa" - Multi-factor auth`,
+  },
+  {
+    name: 'security',
+    description: 'Security features',
+    action: () => `Security Features Overview
   -----------------------
   Encryption:
   • AES-256 data encryption
@@ -145,12 +145,12 @@ export interface Command {
   • Automatic threat detection
   • Security alerts
   • Audit logging
-  • Access monitoring`
-    },
-    {
-      name: 'pricing',
-      description: 'Pricing information',
-      action: () => `DashAuth Pricing Plans
+  • Access monitoring`,
+  },
+  {
+    name: 'pricing',
+    description: 'Pricing information',
+    action: () => `DashAuth Pricing Plans
   -------------------
   Developer Plan: $29/month
   • 10,000 monthly active users
@@ -183,12 +183,12 @@ export interface Command {
   • Dashboard access
   • Basic analytics
   • Developer docs
-  • Community access`
-    },
-    {
-      name: 'mfa',
-      description: 'MFA implementation',
-      action: () => `Multi-Factor Authentication
+  • Community access`,
+  },
+  {
+    name: 'mfa',
+    description: 'MFA implementation',
+    action: () => `Multi-Factor Authentication
   ----------------------
   Supported Methods:
   • TOTP (Google Auth)
@@ -213,12 +213,12 @@ export interface Command {
   • SDK integration
   • WebAuthn support
   • Custom UI options
-  • Branded experience`
-    },
-    {
-      name: 'api',
-      description: 'API documentation',
-      action: () => `API Documentation
+  • Branded experience`,
+  },
+  {
+    name: 'api',
+    description: 'API documentation',
+    action: () => `API Documentation
   ----------------
   Base URL: api.dashauth.com
   
@@ -254,12 +254,12 @@ export interface Command {
   • Custom limits (enterprise)
   
   For full documentation:
-  docs.dashauth.com/api`
-    },
-    {
-      name: 'sso',
-      description: 'SSO implementation',
-      action: () => `Single Sign-On (SSO)
+  docs.dashauth.com/api`,
+  },
+  {
+    name: 'sso',
+    description: 'SSO implementation',
+    action: () => `Single Sign-On (SSO)
   ------------------
   Supported Protocols:
   • SAML 2.0
@@ -288,12 +288,12 @@ export interface Command {
   • Automatic user sync
   • Custom attributes
   • Advanced mapping
-  • Identity federation`
-    },
-    {
-      name: 'status',
-      description: 'System status',
-      action: () => `System Status
+  • Identity federation`,
+  },
+  {
+    name: 'status',
+    description: 'System status',
+    action: () => `System Status
   -------------
   All Systems Operational
   
@@ -317,12 +317,12 @@ export interface Command {
   • Webhooks      : ✓
   
   Last Incident: None
-  Scheduled Maintenance: None`
-    },
-    {
-      name: 'version',
-      description: 'Version information',
-      action: () => `DashAuth Version Info
+  Scheduled Maintenance: None`,
+  },
+  {
+    name: 'version',
+    description: 'Version information',
+    action: () => `DashAuth Version Info
   -------------------
   Current Version: 2.4.0
   Released: March 2024
@@ -340,12 +340,12 @@ export interface Command {
   Compatibility:
   • OAuth: 2.0
   • OIDC: 1.0
-  • SAML: 2.0`
-    },
-    {
-      name: 'contact',
-      description: 'Contact information',
-      action: () => `Contact Information
+  • SAML: 2.0`,
+  },
+  {
+    name: 'contact',
+    description: 'Contact information',
+    action: () => `Contact Information
   ------------------
   Support Channels:
   • Email: support@dashauth.com
@@ -366,7 +366,6 @@ export interface Command {
   Social:
   • Twitter: @dashauth
   • GitHub: github.com/dashauth
-  • LinkedIn: linkedin.com/dashauth`
-    }
-  ];
-  
+  • LinkedIn: linkedin.com/dashauth`,
+  },
+];

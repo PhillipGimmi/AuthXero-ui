@@ -43,10 +43,13 @@ async function handleAuth(request: NextRequest, mode: 'login' | 'register') {
     // Ensure that tokens are returned upon registration
     const authResponse = await (mode === 'login'
       ? client.login({ email, password })
-      : client.signup({ email, password, name })
-    );
+      : client.signup({ email, password, name }));
 
-    if (!authResponse.token || !authResponse.refreshToken || !authResponse.user) {
+    if (
+      !authResponse.token ||
+      !authResponse.refreshToken ||
+      !authResponse.user
+    ) {
       throw new Error('Authentication tokens not received from the server');
     }
 
@@ -80,7 +83,7 @@ async function handleAuth(request: NextRequest, mode: 'login' | 'register') {
           'Content-Type': 'application/json',
           'X-Request-ID': requestId,
         },
-      }
+      },
     );
 
     console.log('Setting Cookies:', {
@@ -123,7 +126,9 @@ async function handleAuth(request: NextRequest, mode: 'login' | 'register') {
     });
 
     const message =
-      error instanceof AuthXeroError ? error.message : 'An unexpected error occurred';
+      error instanceof AuthXeroError
+        ? error.message
+        : 'An unexpected error occurred';
     const status = error instanceof AuthXeroError ? error.status : 500;
 
     return NextResponse.json(
@@ -138,7 +143,7 @@ async function handleAuth(request: NextRequest, mode: 'login' | 'register') {
           'Content-Type': 'application/json',
           'X-Request-ID': requestId,
         },
-      }
+      },
     );
   } finally {
     console.timeEnd(`auth-request-${requestId}`);
@@ -164,7 +169,10 @@ async function handleGetUser(request: NextRequest) {
 
     if (!token) {
       console.log('No token provided');
-      return NextResponse.json({ success: false, message: 'No token provided' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: 'No token provided' },
+        { status: 401 },
+      );
     }
 
     const client = new AuthXeroClient();
@@ -189,7 +197,9 @@ async function handleGetUser(request: NextRequest) {
     });
 
     const message =
-      error instanceof AuthXeroError ? error.message : 'An unexpected error occurred';
+      error instanceof AuthXeroError
+        ? error.message
+        : 'An unexpected error occurred';
     const status = error instanceof AuthXeroError ? error.status : 500;
     return NextResponse.json({ success: false, message }, { status });
   } finally {
@@ -218,7 +228,7 @@ async function handleRefreshToken(request: NextRequest) {
       console.log('No refresh token provided');
       return NextResponse.json(
         { success: false, message: 'No refresh token provided' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -270,7 +280,9 @@ async function handleRefreshToken(request: NextRequest) {
     });
 
     const message =
-      error instanceof AuthXeroError ? error.message : 'An unexpected error occurred';
+      error instanceof AuthXeroError
+        ? error.message
+        : 'An unexpected error occurred';
     const status = error instanceof AuthXeroError ? error.status : 500;
     return NextResponse.json({ success: false, message }, { status });
   } finally {
@@ -297,7 +309,10 @@ async function handleLogout(request: NextRequest) {
 
     if (!token) {
       console.log('No token provided');
-      return NextResponse.json({ success: false, message: 'No token provided' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: 'No token provided' },
+        { status: 401 },
+      );
     }
 
     const client = new AuthXeroClient();
@@ -310,7 +325,7 @@ async function handleLogout(request: NextRequest) {
         success: true,
         message: 'Logged out successfully',
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     response.cookies.delete(AUTH_TOKEN_NAME);
@@ -327,7 +342,9 @@ async function handleLogout(request: NextRequest) {
     });
 
     const message =
-      error instanceof AuthXeroError ? error.message : 'An unexpected error occurred';
+      error instanceof AuthXeroError
+        ? error.message
+        : 'An unexpected error occurred';
     const status = error instanceof AuthXeroError ? error.status : 500;
     return NextResponse.json({ success: false, message }, { status });
   } finally {
@@ -363,7 +380,7 @@ async function handleEmailVerification(request: NextRequest) {
             'Content-Type': 'application/json',
             'X-Request-ID': requestId,
           },
-        }
+        },
       );
     }
 
@@ -388,7 +405,7 @@ async function handleEmailVerification(request: NextRequest) {
             'Content-Type': 'application/json',
             'X-Request-ID': requestId,
           },
-        }
+        },
       );
     }
 
@@ -424,7 +441,7 @@ async function handleEmailVerification(request: NextRequest) {
           'Content-Type': 'application/json',
           'X-Request-ID': requestId,
         },
-      }
+      },
     );
 
     // Refresh the auth token to extend its validity
@@ -444,7 +461,9 @@ async function handleEmailVerification(request: NextRequest) {
     });
 
     const message =
-      error instanceof AuthXeroError ? error.message : 'An unexpected error occurred';
+      error instanceof AuthXeroError
+        ? error.message
+        : 'An unexpected error occurred';
     const status = error instanceof AuthXeroError ? error.status : 500;
 
     return NextResponse.json(
@@ -459,7 +478,7 @@ async function handleEmailVerification(request: NextRequest) {
           'Content-Type': 'application/json',
           'X-Request-ID': requestId,
         },
-      }
+      },
     );
   } finally {
     console.timeEnd(`email-verification-${requestId}`);
@@ -469,7 +488,10 @@ async function handleEmailVerification(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const { pathname } = new URL(request.url);
-  console.log('POST Request:', { pathname, timestamp: new Date().toISOString() });
+  console.log('POST Request:', {
+    pathname,
+    timestamp: new Date().toISOString(),
+  });
 
   if (pathname.includes('/login')) {
     return handleAuth(request, 'login');
@@ -492,19 +514,28 @@ export async function POST(request: NextRequest) {
   }
 
   console.log('Invalid endpoint:', pathname);
-  return NextResponse.json({ success: false, message: 'Invalid endpoint' }, { status: 404 });
+  return NextResponse.json(
+    { success: false, message: 'Invalid endpoint' },
+    { status: 404 },
+  );
 }
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);
-  console.log('GET Request:', { pathname, timestamp: new Date().toISOString() });
+  console.log('GET Request:', {
+    pathname,
+    timestamp: new Date().toISOString(),
+  });
 
   if (pathname.includes('/me')) {
     return handleGetUser(request);
   }
 
   console.log('Invalid endpoint:', pathname);
-  return NextResponse.json({ success: false, message: 'Invalid endpoint' }, { status: 404 });
+  return NextResponse.json(
+    { success: false, message: 'Invalid endpoint' },
+    { status: 404 },
+  );
 }
 
 export async function OPTIONS() {
